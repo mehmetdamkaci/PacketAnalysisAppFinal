@@ -1,0 +1,187 @@
+﻿<Window x:Class="PacketAnalysisApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PacketAnalysisApp"
+        xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+        WindowStartupLocation="CenterScreen" Width="1080" Height="720"
+        AllowsTransparency="False" Background="#333333" Closed="MainAppClosed">
+
+    <Window.Resources>
+        <local:KeyValueConverter x:Key="KeyValueConverter" />
+    </Window.Resources>
+
+    <Grid Margin="54,36,41,10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+
+        <Grid.Resources>
+            <Style x:Key="Body_Content_DataGrid_Centering"
+                        TargetType="{x:Type DataGridCell}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                            <Grid Background="{TemplateBinding Background}">
+                                <ContentPresenter VerticalAlignment="Center"
+                                                      HorizontalAlignment="Center"/>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </Grid.Resources>
+
+        <Grid Margin="-32,50,40,0" Grid.ColumnSpan="2">
+            <Grid.Resources>
+                <Style x:Key="DataGridColumnHeaderCenter" TargetType="DataGridColumnHeader">
+                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                    <Setter Property="FontWeight" Value="Bold" />
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="Background" Value="	#FFD3D3D3"/>
+                    <Setter Property="Margin" Value="1,0,0,2"/>
+                    <Setter Property="Height" Value="20"/>
+                </Style>
+            </Grid.Resources>
+
+
+            <DataGrid Name="dataGrid" AutoGenerateColumns="False" Background="#FF696969" AlternatingRowBackground="LightGray" AlternationCount="2"
+                      ItemsSource="{Binding Path=Packets}" SelectedItem="{Binding Path=paketID}" IsReadOnly="True" BorderThickness="0" 
+                      CellStyle="{StaticResource Body_Content_DataGrid_Centering}" Margin="32,-32,0,34" SelectionUnit="FullRow" >
+
+                <DataGrid.Resources>
+                    <Style TargetType="{x:Type DataGridColumnHeader}">
+                        <Setter Property="Background" Value="Black"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                    </Style>
+                </DataGrid.Resources>
+
+                <!--<DataGrid.RowHeaderTemplate>
+                    <DataTemplate>
+                        <Expander Expanded="Expander_Expanded" Collapsed="Expander_Collapsed">
+                        </Expander>
+                    </DataTemplate>
+                </DataGrid.RowHeaderTemplate>-->
+
+
+                <DataGrid.Columns >
+                    <DataGridTextColumn x:Name="paketColumn" Header="PAKET"  Width="*" HeaderStyle="{StaticResource DataGridColumnHeaderCenter}" />
+                    <DataGridTextColumn x:Name="projeColumn" Header="PROJE"  Width="*" HeaderStyle="{StaticResource DataGridColumnHeaderCenter}" />
+                    <DataGridTextColumn x:Name="toplamColumn" Header="TOPLAM"  Width="*" HeaderStyle="{StaticResource DataGridColumnHeaderCenter}" />
+                    <DataGridTextColumn x:Name="frekansColumn" Header="FREKANS"  Width="*" HeaderStyle="{StaticResource DataGridColumnHeaderCenter}" />
+                    <!--<DataGridTextColumn Header="DETAY" Binding="{Binding Path=projeID}" Width="*" HeaderStyle="{StaticResource DataGridColumnHeaderCenter}" />-->
+                    <DataGridTemplateColumn Header="DETAY"  Width="*" HeaderStyle="{StaticResource DataGridColumnHeaderCenter}" Selector.IsSelected="False">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" >
+                                    <Button x:Name="detayButton" Content="Detay" Margin="0,0,5,0" Click="ButtonDetayClicked" Width="60" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+
+
+                <DataGrid.RowDetailsTemplate >
+                    <DataTemplate >
+                        <StackPanel>
+                            <Label Content="{Binding Key, Converter={StaticResource KeyValueConverter}}" HorizontalContentAlignment="Center" FontWeight="Bold" Foreground="White" Background="DimGray" Margin="20,5,20,0">
+                                <!--<Label.Content>
+                                    <MultiBinding Converter="{StaticResource KeyValueConverter}">
+                                        <Binding Path="Key" />
+                                        -->
+                                <!--<Binding Source=" PAKETİ FREKANS GRAFİĞİ" />-->
+                                <!--
+                                    </MultiBinding>
+                                </Label.Content>-->
+                            </Label>
+                            <StackPanel Margin="20,0,20,0" Orientation="Horizontal" Background="DimGray">
+                                <Button Content="Zoom-" HorizontalContentAlignment="Center" Width="40" Click="Button_Click" Loaded="zoomButtonLoaded"/>
+                                <Button Content="REAL" HorizontalContentAlignment="Center" Width="40" Click="realButton_Click" Loaded="realButtonLoaded"/>
+                            </StackPanel>
+                            <lvc:CartesianChart Margin="20,0,20,10" x:Name="realTimeChart" Background="DimGray" Zoom="None" Loaded="LoadTextBlock" ScrollMode="None" Pan="X"
+                                                DisableAnimations ="True" Hoverable="False" AllowDrop="False" DataTooltip="{x:Null}" Focusable="True" MouseWheel="ChartZoomEvent"
+                                                MouseLeftButtonDown="ChartPanEvent" MouseLeftButtonUp="ChartPanEvent">
+                                <lvc:CartesianChart.CacheMode>
+                                    <BitmapCache EnableClearType="False" 
+                                                RenderAtScale="1"
+                                                SnapsToDevicePixels="False" />
+                                </lvc:CartesianChart.CacheMode>
+                                <lvc:CartesianChart.AxisX>
+                                    <lvc:Axis Name="XAxis" Title="Zaman" Labels="{Binding chartXLabels}" LabelsRotation="30" FontSize="16" Foreground="White" DisableAnimations ="True"/>
+                                </lvc:CartesianChart.AxisX>
+                                <lvc:CartesianChart.AxisY>
+                                    <lvc:Axis Name="YAxis" Title="Paket Sayısı" FontSize="16" Foreground="White" DisableAnimations ="True"/>
+                                </lvc:CartesianChart.AxisY>
+                            </lvc:CartesianChart>
+
+                        </StackPanel>
+                        <!--<TextBlock x:Name="textBox" Loaded="LoadTextBlock" Text="aaaaaa" Margin="10,5,0,0" FontFamily="Courier, monospace" FontSize="13"  FontWeight="SemiBold" Foreground="Black"/>-->
+
+                    </DataTemplate>
+                </DataGrid.RowDetailsTemplate>
+                <DataGrid.RowDetailsVisibilityMode>Collapsed</DataGrid.RowDetailsVisibilityMode>
+
+            </DataGrid>
+
+        </Grid>
+
+        <Border CornerRadius="5" BorderBrush="Black" BorderThickness="1" Background="LightGray" Height="25" VerticalAlignment="Top" Margin="0,-22,40,0" HorizontalAlignment="Right" Width="200" Grid.Column="1">
+            <StackPanel Margin="0,0,10,0" Height="50" VerticalAlignment="Top" HorizontalAlignment="Right" Width="214">
+                <TextBox x:Name="searchBox" Text="Ara" TextWrapping="Wrap" Background="LightGray" BorderThickness="0"
+                                 FontWeight="Bold" VerticalContentAlignment="Center" TextChanged="searchBox_TextChanged" Width="150" Height="23" RenderTransformOrigin="0.511,0.5"/>
+            </StackPanel>
+        </Border>
+
+        <Border CornerRadius="5" BorderBrush="Black" BorderThickness="1" Background="LightGray" Height="25" VerticalAlignment="Top" Margin="22,-16,0,0" HorizontalAlignment="Left" Width="60" Grid.ColumnSpan="2">
+            <Button Content="Ayarlar" Background="LightGray" Margin="5,0,3,0" Height="25" 
+                    BorderThickness="0" VerticalAlignment="Center" Click="AyarlarClicked"/>
+        </Border>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Column="2" Margin="0,0,0,71">
+            <StackPanel x:Name="buttonPiePanel"  Orientation="Vertical">
+                <lvc:PieChart x:Name="pieChart" Foreground="AliceBlue"
+                        InnerRadius="0" LegendLocation="Bottom" Hoverable="False" Series="{Binding SeriesCollection}" 
+                        Height="314" DisableAnimations="True" Margin="0,0,0,80" >
+                    <lvc:PieChart.CacheMode>
+                        <BitmapCache EnableClearType="False" 
+                                                RenderAtScale="1"
+                                                SnapsToDevicePixels="False" />
+                    </lvc:PieChart.CacheMode>
+                </lvc:PieChart>
+                <Label x:Name="paketProjeDist" Margin="0,0,0,10" Content="PAKET - PROJE DAĞILIMLARI" HorizontalContentAlignment="Center"
+                       Foreground="White" FontSize="16" FontWeight="Bold" Visibility="Collapsed"/>
+
+                <Border CornerRadius="20" BorderBrush="Black" BorderThickness="1" Background="Gray"  VerticalAlignment="Top" Margin="0,0,40,0" 
+                        HorizontalAlignment="Center"  Grid.Column="1">
+                    <StackPanel x:Name="socketPanel" Orientation="Vertical" HorizontalAlignment="Center" Background="Transparent">
+                        <StackPanel Margin="0,20,0,0" Orientation="Horizontal">
+                            <Label Margin="26,0,0,0"  Content="IP" Foreground="White" FontSize="16" FontWeight="Bold"/>
+                            <TextBox x:Name="ipBox" Width="200" Height="25" VerticalContentAlignment="Center" FontWeight="Bold" Background="LightGray" Margin="0,0,20,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Label Content="PORT" Foreground="White" FontSize="16" FontWeight="Bold"/>
+                            <TextBox x:Name="portBox" Width="200" Height="25" VerticalContentAlignment="Center" FontWeight="Bold" Background="LightGray"/>
+                        </StackPanel>
+                        <Button x:Name="connectButton" Content="Bağlan" Width="100" Margin="30, 20, 0,20" FontWeight="Bold" Click="ConnectButtonClicked"/>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <Button x:Name="socketPanelButton" Grid.Column="2" Content="Soket Panel" Margin="0,0,0,10" Height="20" 
+                Click="SocketPanelButtonClicked" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="100"/>
+
+
+
+        <!--<Button Grid.Column="2" Content="Button" HorizontalAlignment="Left" Margin="161,406,0,0" VerticalAlignment="Top" Click="Button_Click"/>-->
+
+        <!--<TextBox x:Name="textBox" Grid.Column="1" HorizontalAlignment="Left" Margin="25,320,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="267" Height="280"/>
+        <Button Grid.Column="1" Content="Button" HorizontalAlignment="Left" Margin="84,619,0,0" VerticalAlignment="Top" Width="145" Click="buttonClick"/>-->
+
+    </Grid>
+</Window>
