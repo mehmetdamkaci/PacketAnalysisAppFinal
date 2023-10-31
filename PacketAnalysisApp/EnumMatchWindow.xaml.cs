@@ -965,7 +965,7 @@ namespace PacketAnalysisApp
 
             kaydetStack.Visibility = Visibility.Collapsed;
 
-            MessageBox.Show(Environment.CurrentDirectory);
+            //MessageBox.Show(Environment.CurrentDirectory);
 
             paketName = clickedButton.Content.ToString().Trim();
             configData.Name = paketName;
