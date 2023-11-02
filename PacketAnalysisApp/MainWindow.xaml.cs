@@ -34,6 +34,9 @@ using LiveCharts.Wpf.Charts.Base;
 using NetMQ;
 using NetMQ.Sockets;
 using LiveCharts.Defaults;
+using System.Data;
+using static NetMQ.NetMQSelector;
+using LiveCharts.Maps;
 
 namespace PacketAnalysisApp
 {
@@ -97,6 +100,7 @@ namespace PacketAnalysisApp
         Dictionary<string[], int[]> totalReceivedaPacket = new Dictionary<string[], int[]>(new StringArrayComparer());
 
         ObservableCollection<KeyValuePair<string[], int[]>> dataSource = new ObservableCollection<KeyValuePair<string[], int[]>>();
+        ObservableCollection<KeyValuePair<string[], int[]>> filteredSource = new ObservableCollection<KeyValuePair<string[], int[]>>();
 
         SeriesCollection piechartPaket;
         //Dictionary<string, SeriesCollection> piechartPaket = new Dictionary<string, SeriesCollection>();
@@ -348,10 +352,11 @@ namespace PacketAnalysisApp
             }
             //int currentTotal = totalReceivedaPacket[enumStruct[paketName].Values.ElementAt((int)bytes[0])][1];
             //totalReceivedaPacket[enumStruct[paketName].Values.ElementAt((int)bytes[0])][0] = currentTotal - privTotal;
-            //privTotal = totalReceivedaPacket[enumStruct[paketName].Values.ElementAt((int)bytes[0])][1];            
+            //privTotal = totalReceivedaPacket[enumStruct[paketName].Values.ElementAt((int)bytes[0])][1];
+            //dataGrid.ItemsSource = dataSource.Where(item => item.Key[0].Contains(searchBox.Text) || item.Key[1].Contains(searchBox.Text));
         }
 
-        
+
 
         private void ChartPanEvent(object sender, MouseButtonEventArgs e )
         {
@@ -382,114 +387,75 @@ namespace PacketAnalysisApp
 
         public void deneme()
         {
-            Task.Run(() =>
+           Task.Run(() =>
             {
                 //MessageBox.Show("Pie Chart Yüklendi");
                 rowColor.Clear();
                 pieChart.Dispatcher.Invoke(new Action(() =>
                 {
-                    foreach (Series series in pieChart.Series)
+                    try
                     {
-                        if (series is PieSeries pieSeries)
+
+                        foreach (Series series in pieChart.Series)
                         {
-                            if (series.Fill is SolidColorBrush solidColorBrush)
+                            if (series is PieSeries pieSeries)
                             {
-                                //MessageBox.Show(series.Title);
-                                rowColor.Add(series.Title, solidColorBrush);
+                                if (series.Fill is SolidColorBrush solidColorBrush)
+                                {
+                                    //MessageBox.Show(series.Title);
+                                    rowColor.Add(series.Title, solidColorBrush);
+                                }
                             }
                         }
+
+                        if (rowColor.Count == paketButtons.Count)
+                        {
+                            foreach (var btn in paketButtons)
+                            {
+                                btn.Value.Background = rowColor[btn.Key];
+                                ((ColumnSeries)barCharts[btn.Key].Series[0]).Fill = rowColor[btn.Key];
+                            }
+                        }
+
+                        dataGrid.Dispatcher.Invoke(new Action(() =>
+                        {
+                            for (int i = 0; i < dataGrid.Items.Count; i++)
+                            {
+                                DataGridRow row = (DataGridRow)dataGrid.ItemContainerGenerator.ContainerFromIndex(i);
+                                if (row != null)
+                                {
+                                    string name = ((KeyValuePair<string[], int[]>)row.Item).Key[0];
+                                    DataGridCell cell = GetCell(row, 0);
+                                    cell.Background = rowColor[name];
+                                    row.Background = rowColor[name];
+
+                                    row.FontWeight = FontWeights.Bold;
+                                    SolidColorBrush newSolidColorBrush = new SolidColorBrush(Color.FromArgb((byte)70, rowColor[name].Color.R,
+                                                                            rowColor[name].Color.G, rowColor[name].Color.B));
+
+                                    //row.Background.Opacity = 50;
+                                    row.Background = newSolidColorBrush;
+                                    row.Foreground = Brushes.Black;
+                                }
+                            }
+                        }));
+                    }
+                    catch 
+                    {
+                        rowColorStart = true;
                     }
 
-                    if (rowColor.Count == paketButtons.Count)
-                    {
-                        foreach (var btn in paketButtons)
-                        {
-                            btn.Value.Background = rowColor[btn.Key];
-                            ((ColumnSeries)barCharts[btn.Key].Series[0]).Fill = rowColor[btn.Key];
-                        }
-                    }
                     //setColor();
                 }));
             });
-            
-            
-        }
-        private void DataGridLoaded(object sender, DataGridRowEventArgs e)
-        {
-            Task task = new Task(() => {
-
-                dataGrid.Dispatcher.Invoke(() =>
-                {
-                    DataGridRow row = e.Row;
-                    KeyValuePair<string[], int[]> item = (KeyValuePair<string[], int[]>)row.Item;
-                    DataGridCell cell = GetCell(row, 0);
-
-                    try
-                    {
-                        if (cell != null)
-                        {
-                            cell.Background = rowColor[item.Key[0]];
-                        }
 
 
-                        row.FontWeight = FontWeights.Bold;
-                        SolidColorBrush newSolidColorBrush = new SolidColorBrush(Color.FromArgb((byte)70, rowColor[item.Key[0]].Color.R,
-                                                                rowColor[item.Key[0]].Color.G, rowColor[item.Key[0]].Color.B));
-
-                        //row.Background.Opacity = 50;
-                        row.Background = newSolidColorBrush;
-                        row.Foreground = Brushes.Black;
-                        row.Foreground.Opacity = 255;
-                        //row.Background.Freeze();
-                    }
-                    catch { }
-                });
-                });
-
-            task.Start();
-            Task.Run(() => task);
-            //if (!equalsKey)
-            //{
-            //    for (int i = 0; i<totalReceivedaPacket.Count; i++)
-            //    {
-            //        equalsKey = rowColor.ContainsKey(totalReceivedaPacket.Keys.ElementAt(i)[0]);
-            //    }
-            //}
-
-
-            
-
-
-            //try
-            //{
-            //    dataGrid.Dispatcher.Invoke(new Action(() =>
-            //    {
-                    
-            //        int count = 0;
-            //        foreach (var Row in dataGrid.Items)
-            //        {
-
-            //            //count++;
-            //            //MessageBox.Show(count.ToString());
-
-            //            var row = dataGrid.ItemContainerGenerator.ContainerFromItem(Row) as DataGridRow;
-            //            KeyValuePair<string[], int[]> item = (KeyValuePair<string[], int[]>)row.Item;
-            //            DataGridCell cell = GetCell(row, 0);
-            //            cell.Background = rowColor[item.Key[0]];
-            //            row.Foreground = rowColor[item.Key[0]];
-            //            row.FontWeight = FontWeights.Bold;
-            //        }
-            //    }));
-            //    dataGrid.ItemsSource = dataSource.ToList();
-            //}
-            //catch { }
 
         }
 
         // -------------------- Ayarlar Buton Fonksiyonu --------------------
         public void AyarlarClicked(object sender, RoutedEventArgs e)
         {
-
             //if(timer != null) timer.Stop();
             enumMatchWindow.Show();
         }
@@ -539,27 +505,28 @@ namespace PacketAnalysisApp
             //enumMatchWindow.Show();
         }
         // -------------------- FİLTRE FONKSİYONU --------------------
-        List<KeyValuePair<string[], int[]>> filterModeList = new List<KeyValuePair<string[], int[]>>();
+        
         public void searchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
 
-            filterModeList.Clear();
-            if (searchBox.Text.Equals(""))
-            {
-                filterModeList.AddRange(dataSource.ToList());
-            }
-            else
-            {
-                foreach (KeyValuePair<string[], int[]> packet in dataSource)
-                {
-                    if (packet.Key[0].Contains(searchBox.Text) || packet.Key[1].Contains(searchBox.Text) 
-                        || packet.Key[0].Contains(searchBox.Text.ToUpper()) || packet.Key[1].Contains(searchBox.Text.ToUpper()))
-                    {
-                        filterModeList.Add(packet);
-                    }
-                }
-            }
-            dataGrid.ItemsSource = filterModeList.ToList();
+            //List<KeyValuePair<string[], int[]>> filterModeList = new List<KeyValuePair<string[], int[]>>();
+            //filterModeList.Clear();
+            //if (searchBox.Text.Equals(""))
+            //{
+            //    filterModeList.AddRange(dataSource.ToList());
+            //}
+            //else
+            //{
+            //    foreach (KeyValuePair<string[], int[]> packet in dataSource)
+            //    {
+            //        if (packet.Key[0].Contains(searchBox.Text) || packet.Key[1].Contains(searchBox.Text) 
+            //            || packet.Key[0].Contains(searchBox.Text.ToUpper()) || packet.Key[1].Contains(searchBox.Text.ToUpper()))
+            //        {
+            //            filterModeList.Add(packet);
+            //        }
+            //    }
+            //}
+            //dataGrid.ItemsSource = filterModeList.ToList();
         }
         private void enumKaydetClick(object sender, RoutedEventArgs e)
         {
@@ -725,6 +692,36 @@ namespace PacketAnalysisApp
             //}
         }
 
+        private void TextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                dataGrid.Dispatcher.Invoke(new Action(() =>
+                {
+                    for (int i = 0; i < dataGrid.Items.Count; i++)
+                    {
+                        DataGridRow row = (DataGridRow)dataGrid.ItemContainerGenerator.ContainerFromIndex(i);
+                        if (row != null)
+                        {
+                            string[] name = ((KeyValuePair<string[], int[]>)row.Item).Key;
+
+                            if (!(name[0].Contains(searchBox.Text) || name[1].Contains(searchBox.Text)
+                                || name[0].Contains(searchBox.Text.ToLower()) || name[1].Contains(searchBox.Text.ToLower())
+                                || name[0].Contains(searchBox.Text.ToUpper()) || name[1].Contains(searchBox.Text.ToUpper())))
+                            {
+                                row.Visibility = Visibility.Collapsed;
+                            }
+                            else
+                            {
+                                row.Visibility = Visibility.Visible;
+                            }
+                        }
+                    }
+                }));
+            }
+        }
+
+
         private void EnumMatchingWindow_UpdatedList(Dictionary<string, Dictionary<int, string>> updatedList)
         {
             //enumStruct = updatedList;
@@ -761,11 +758,7 @@ namespace PacketAnalysisApp
                 bytes = ReceivingSocketExtensions.ReceiveFrameBytes(subSocket);
                 bytes = DecryptAes(bytes);
 
-                if (rowColorStart)
-                {
-                    deneme();
-                    rowColorStart = false;
-                }
+
 
                 string[] paket_proje = new string[] { enumStruct[paketName].Values.ElementAt((int)bytes[paketByte]),
                                             enumStruct[enumStruct[paketName].Values.ElementAt((int)bytes[paketByte])].Values.ElementAt((int)bytes[projeByte]) };
@@ -776,7 +769,14 @@ namespace PacketAnalysisApp
 
                 int total = 0;
                 dataGrid.Dispatcher.Invoke(new System.Action(() =>
-                {   
+                {
+
+                    if (rowColorStart & dataGrid.Items.Count == totalReceivedaPacket.Count)
+                    {
+                        deneme();
+                        rowColorStart = false;
+                    }
+
                     int idx = 0;
                     foreach(var data in totalReceivedaPacket)
                     {
@@ -787,6 +787,8 @@ namespace PacketAnalysisApp
                             idx++;
                         }                          
                     }
+
+                    
 
                     chartValuesList[paket_proje[0]][0] = total;
                     //chartValuesList[paket_proje[0]][0] = totalReceivedaPacket[paket_proje][1] + 1;
@@ -800,14 +802,13 @@ namespace PacketAnalysisApp
                     }
                     else
                     {
-
                         int index = dataSource.IndexOf(item);
                         dataSource[index].Value[1] += 1;
                     }
-                        
+
+
                     //dataGrid.Items.Refresh();
-                        
-                    dataGrid.ItemsSource = dataSource;
+                    //dataGrid.ItemsSource = dataSource;
                 }));
             }
         }

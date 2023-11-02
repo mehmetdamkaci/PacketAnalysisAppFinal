@@ -54,9 +54,9 @@
             </Grid.Resources>
 
 
-            <DataGrid Name="dataGrid" AutoGenerateColumns="False" Background="#FF696969" AlternatingRowBackground="WhiteSmoke" AlternationCount="2"
+            <DataGrid Name="dataGrid" AutoGenerateColumns="False" Background="#FF696969" AlternatingRowBackground="LightGray" AlternationCount="2"
                       ItemsSource="{Binding Path=Packets}" SelectedItem="{Binding Path=paketID}" IsReadOnly="True" BorderThickness="0" 
-                      CellStyle="{StaticResource Body_Content_DataGrid_Centering}" Margin="32,-32,0,34" SelectionUnit="FullRow" LoadingRow="DataGridLoaded"
+                      CellStyle="{StaticResource Body_Content_DataGrid_Centering}" Margin="32,-32,0,34" SelectionUnit="FullRow"
                       VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.ScrollUnit="Item" EnableRowVirtualization="False">
 
                 <DataGrid.Resources>
@@ -64,6 +64,7 @@
                         <Setter Property="Background" Value="Black"/>
                         <Setter Property="FontWeight" Value="SemiBold"/>
                     </Style>
+                    <CollectionViewSource x:Key="cvs" Source="{Binding dataSource}" />
                 </DataGrid.Resources>
 
                 <!--<DataGrid.RowHeaderTemplate>
@@ -90,7 +91,6 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
-
 
                 <DataGrid.RowDetailsTemplate >
                     <DataTemplate >
@@ -139,7 +139,8 @@
         <Border CornerRadius="5" BorderBrush="Black" BorderThickness="1" Background="LightGray" Height="25" VerticalAlignment="Top" Margin="0,-22,40,0" HorizontalAlignment="Right" Width="200" Grid.Column="1">
             <StackPanel Margin="0,0,10,0" Height="50" VerticalAlignment="Top" HorizontalAlignment="Right" Width="214">
                 <TextBox x:Name="searchBox" Text="Ara" TextWrapping="Wrap" Background="LightGray" BorderThickness="0"
-                                 FontWeight="Bold" VerticalContentAlignment="Center" TextChanged="searchBox_TextChanged" Width="150" Height="23" RenderTransformOrigin="0.511,0.5"/>
+                                 FontWeight="Bold" VerticalContentAlignment="Center" TextChanged="searchBox_TextChanged" 
+                                 Width="150" Height="23" RenderTransformOrigin="0.511,0.5" KeyDown="TextBox_KeyDown"/>
             </StackPanel>
         </Border>
 
