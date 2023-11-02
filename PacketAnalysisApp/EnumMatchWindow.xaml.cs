@@ -16,6 +16,8 @@ using System.Windows.Media.Imaging;
 using Newtonsoft.Json;
 using System.Windows.Markup;
 using System.Runtime.CompilerServices;
+using System.Security.Principal;
+using System.Threading.Tasks;
 
 namespace PacketAnalysisApp
 {
@@ -767,14 +769,20 @@ namespace PacketAnalysisApp
 
         private void BrowseClick(object sender, RoutedEventArgs e)
         {
-            Microsoft.Win32.OpenFileDialog openFileDlg = new Microsoft.Win32.OpenFileDialog();
-
-            Nullable<bool> result = openFileDlg.ShowDialog();
-
-            if (result == true)
+            Task.Run(() =>
             {
-                FileNameTextBox.Text = openFileDlg.FileName;
-            }
+                Microsoft.Win32.OpenFileDialog openFileDlg = new Microsoft.Win32.OpenFileDialog();
+
+                Nullable<bool> result = openFileDlg.ShowDialog();
+
+                if (result == true)
+                {
+                    FileNameTextBox.Dispatcher.Invoke(new Action(() => {
+                        FileNameTextBox.Text = openFileDlg.FileName;
+                    }));
+                }
+            });
+
         }
 
         private void OKClick(object sender, RoutedEventArgs e)
@@ -923,12 +931,23 @@ namespace PacketAnalysisApp
             }
 
             string path = FileNameTextBox.Text;
+            string userName = string.Empty;
+            WindowsIdentity currentUser = WindowsIdentity.GetCurrent();
 
-            if (!Directory.Exists("C:\\PacketAnalysis"))
+            if (currentUser.Name.Contains("\\"))
             {
-                Directory.CreateDirectory("C:\\PacketAnalysis");
+                userName = currentUser.Name.Substring(currentUser.Name.IndexOf("\\") + 1);
             }
-            newPath = "C:\\PacketAnalysis\\Matched_" + path.Substring(path.LastIndexOf('\\') + 1);
+            else
+            {
+                userName = currentUser.Name;
+            }
+
+            if (!Directory.Exists("C:\\" + userName + "\\AppData\\Roaming\\PacketAnalysis"))
+            {
+                Directory.CreateDirectory("C:\\" + userName + "\\AppData\\Roaming\\PacketAnalysis");
+            }
+            newPath = "C:\\" + userName + "\\AppData\\Roaming\\PacketAnalysis\\Matched_" + path.Substring(path.LastIndexOf('\\') + 1);
             //newPath = path.Substring(0, path.LastIndexOf("\\")) + "\\" + "new" + path.Substring(path.LastIndexOf('\\') + 1);
             if (File.Exists(newPath))
             {

@@ -45,12 +45,19 @@
                     <Setter Property="Margin" Value="1,0,0,2"/>
                     <Setter Property="Height" Value="20"/>
                 </Style>
+                <Style x:Key="DataGridColumn" TargetType="DataGridColumnHeader">
+                    <Setter Property="Background" Value="	#FFD3D3D3"/>
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="Margin" Value="1,0,0,2"/>
+                    <Setter Property="Height" Value="20"/>
+                </Style>
             </Grid.Resources>
 
 
-            <DataGrid Name="dataGrid" AutoGenerateColumns="False" Background="#FF696969" AlternatingRowBackground="LightGray" AlternationCount="2"
+            <DataGrid Name="dataGrid" AutoGenerateColumns="False" Background="#FF696969" AlternatingRowBackground="WhiteSmoke" AlternationCount="2"
                       ItemsSource="{Binding Path=Packets}" SelectedItem="{Binding Path=paketID}" IsReadOnly="True" BorderThickness="0" 
-                      CellStyle="{StaticResource Body_Content_DataGrid_Centering}" Margin="32,-32,0,34" SelectionUnit="FullRow" >
+                      CellStyle="{StaticResource Body_Content_DataGrid_Centering}" Margin="32,-32,0,34" SelectionUnit="FullRow" LoadingRow="DataGridLoaded"
+                      VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.ScrollUnit="Item" EnableRowVirtualization="False">
 
                 <DataGrid.Resources>
                     <Style TargetType="{x:Type DataGridColumnHeader}">
@@ -66,8 +73,8 @@
                     </DataTemplate>
                 </DataGrid.RowHeaderTemplate>-->
 
-
                 <DataGrid.Columns >
+                    <DataGridTextColumn  Header=""  Width=""  HeaderStyle="{StaticResource DataGridColumn}"/>
                     <DataGridTextColumn x:Name="paketColumn" Header="PAKET"  Width="*" HeaderStyle="{StaticResource DataGridColumnHeaderCenter}" />
                     <DataGridTextColumn x:Name="projeColumn" Header="PROJE"  Width="*" HeaderStyle="{StaticResource DataGridColumnHeaderCenter}" />
                     <DataGridTextColumn x:Name="toplamColumn" Header="TOPLAM"  Width="*" HeaderStyle="{StaticResource DataGridColumnHeaderCenter}" />
@@ -143,7 +150,7 @@
 
         <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Column="2" Margin="0,0,0,71">
             <StackPanel x:Name="buttonPiePanel"  Orientation="Vertical">
-                <lvc:PieChart x:Name="pieChart" Foreground="AliceBlue"
+                <lvc:PieChart x:Name="pieChart" Foreground="AliceBlue" Loaded="PieChartLoaded"
                         InnerRadius="0" LegendLocation="Bottom" Hoverable="False" Series="{Binding SeriesCollection}" 
                         Height="314" DisableAnimations="True" Margin="0,0,0,80" >
                     <lvc:PieChart.CacheMode>
@@ -155,18 +162,21 @@
                 <Label x:Name="paketProjeDist" Margin="0,0,0,10" Content="PAKET - PROJE DAĞILIMLARI" HorizontalContentAlignment="Center"
                        Foreground="White" FontSize="16" FontWeight="Bold" Visibility="Collapsed"/>
 
-                <Border CornerRadius="20" BorderBrush="Black" BorderThickness="1" Background="Gray"  VerticalAlignment="Top" Margin="0,0,40,0" 
+                <Border x:Name="borderSocketPanel" CornerRadius="20" BorderBrush="Black" BorderThickness="1" Background="Gray"  VerticalAlignment="Top" Margin="0,0,40,0" 
                         HorizontalAlignment="Center"  Grid.Column="1">
                     <StackPanel x:Name="socketPanel" Orientation="Vertical" HorizontalAlignment="Center" Background="Transparent">
                         <StackPanel Margin="0,20,0,0" Orientation="Horizontal">
                             <Label Margin="26,0,0,0"  Content="IP" Foreground="White" FontSize="16" FontWeight="Bold"/>
-                            <TextBox x:Name="ipBox" Width="200" Height="25" VerticalContentAlignment="Center" FontWeight="Bold" Background="LightGray" Margin="0,0,20,0"/>
+                            <TextBox x:Name="ipBox" Text="127.0.0.1" Width="200" Height="25" VerticalContentAlignment="Center" FontWeight="Bold" Background="LightGray" Margin="0,0,20,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <Label Content="PORT" Foreground="White" FontSize="16" FontWeight="Bold"/>
-                            <TextBox x:Name="portBox" Width="200" Height="25" VerticalContentAlignment="Center" FontWeight="Bold" Background="LightGray"/>
+                            <TextBox x:Name="portBox" Text="12345" Width="200" Height="25" VerticalContentAlignment="Center" FontWeight="Bold" Background="LightGray"/>
                         </StackPanel>
-                        <Button x:Name="connectButton" Content="Bağlan" Width="100" Margin="30, 20, 0,20" FontWeight="Bold" Click="ConnectButtonClicked"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="disconnectButton" Content="Bağlantıyı Kes" Width="100" Margin="20, 20, 0,20" FontWeight="Bold" Click="DisconnectButtonClicked"/>
+                            <Button x:Name="connectButton" Content="Bağlan" Width="100" Margin="30, 20, 0,20" FontWeight="Bold" Click="ConnectButtonClicked"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

@@ -4,9 +4,12 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.WebSockets;
+using System.Security.Cryptography;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,10 +28,12 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Xml.Linq;
 using LiveCharts;
+using LiveCharts.Definitions.Charts;
 using LiveCharts.Wpf;
 using LiveCharts.Wpf.Charts.Base;
 using NetMQ;
 using NetMQ.Sockets;
+using LiveCharts.Defaults;
 
 namespace PacketAnalysisApp
 {
@@ -72,9 +77,20 @@ namespace PacketAnalysisApp
 
     public partial class MainWindow : Window
     {
+        byte[] Key = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20 };
+        byte[] IV = new byte[] { 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30 };
+        int paketByte = 0;
+        int projeByte = 1;
+
+        bool startConnect = true;
+        bool disconnect = false;
         bool stop = false;
         Thread subscriber;
         SubscriberSocket subSocket = new SubscriberSocket();
+
+        bool equalsKey = false;
+        bool rowColorStart = true;
+        Dictionary<string, SolidColorBrush> rowColor = new Dictionary<string, SolidColorBrush>();
 
         EnumMatchWindow enumMatchWindow = new EnumMatchWindow();
         Dictionary<string, Dictionary<int, string>> enumStruct = new Dictionary<string, Dictionary<int, string>>();
@@ -116,8 +132,10 @@ namespace PacketAnalysisApp
         Dictionary<string, ColumnSeries> barColumnSeries = new Dictionary<string, ColumnSeries>();
         List<CartesianChart> barChartsToRemove = new List<CartesianChart>();
         public MainWindow()
-        {
+        {            
             InitializeComponent();
+            startConnect = true;
+            disconnectButton.IsEnabled = false;
             subscriber = new Thread(new ThreadStart(receiveData));
             // -------------------- EVENTLER --------------------
             enumMatchWindow.Closed += enumMatchClosed;
@@ -187,6 +205,7 @@ namespace PacketAnalysisApp
 
         public void createTotalPacketDict()
         {
+            equalsKey = false;
             barCharts = new Dictionary<string, CartesianChart>();
             barColumnSeries = new Dictionary<string, ColumnSeries>();
 
@@ -235,7 +254,6 @@ namespace PacketAnalysisApp
 
                 buttonPiePanel.Children.Add(paketButton);
                 buttonPiePanel.Children.Add(barChart);
-
 
                 for (int j = 0; j < enumStruct[enumStruct[enumMatchWindow.paketName].Values.ElementAt(i)].Values.Count; j++)
                 {
@@ -320,12 +338,6 @@ namespace PacketAnalysisApp
                             chartList[totalReceivedaPacket.Keys.ElementAt(i)].Pan = PanningOptions.X;                           
                             break;
                     }
-                    ////chartList["YZB_SURECLER"].AxisX[0].MouseWheel += ChartZoomEvent;
-                    //chartList["YZB_SURECLER"].Zoom = ZoomingOptions.X;
-                    //chartList["YZB_SURECLER"].AxisY[0].MinValue = 0;
-                    //chartList["YZB_SURECLER"].AxisY[0].MaxValue = lineValuesList["YZB_SURECLER"].Max();
-                    //chartList["YZB_SURECLER"].AxisX[0].MinValue = chartXLabels.Count - 20;
-                    //chartList["YZB_SURECLER"].AxisX[0].MaxValue = chartXLabels.Count - 1;
                 }
                 catch
                 {
@@ -366,10 +378,119 @@ namespace PacketAnalysisApp
             //chartStatus = "DEFAULT";
         }
 
+        
+
+        public void deneme()
+        {
+            Task.Run(() =>
+            {
+                //MessageBox.Show("Pie Chart Yüklendi");
+                rowColor.Clear();
+                pieChart.Dispatcher.Invoke(new Action(() =>
+                {
+                    foreach (Series series in pieChart.Series)
+                    {
+                        if (series is PieSeries pieSeries)
+                        {
+                            if (series.Fill is SolidColorBrush solidColorBrush)
+                            {
+                                //MessageBox.Show(series.Title);
+                                rowColor.Add(series.Title, solidColorBrush);
+                            }
+                        }
+                    }
+
+                    if (rowColor.Count == paketButtons.Count)
+                    {
+                        foreach (var btn in paketButtons)
+                        {
+                            btn.Value.Background = rowColor[btn.Key];
+                            ((ColumnSeries)barCharts[btn.Key].Series[0]).Fill = rowColor[btn.Key];
+                        }
+                    }
+                    //setColor();
+                }));
+            });
+            
+            
+        }
+        private void DataGridLoaded(object sender, DataGridRowEventArgs e)
+        {
+            Task task = new Task(() => {
+
+                dataGrid.Dispatcher.Invoke(() =>
+                {
+                    DataGridRow row = e.Row;
+                    KeyValuePair<string[], int[]> item = (KeyValuePair<string[], int[]>)row.Item;
+                    DataGridCell cell = GetCell(row, 0);
+
+                    try
+                    {
+                        if (cell != null)
+                        {
+                            cell.Background = rowColor[item.Key[0]];
+                        }
+
+
+                        row.FontWeight = FontWeights.Bold;
+                        SolidColorBrush newSolidColorBrush = new SolidColorBrush(Color.FromArgb((byte)70, rowColor[item.Key[0]].Color.R,
+                                                                rowColor[item.Key[0]].Color.G, rowColor[item.Key[0]].Color.B));
+
+                        //row.Background.Opacity = 50;
+                        row.Background = newSolidColorBrush;
+                        row.Foreground = Brushes.Black;
+                        row.Foreground.Opacity = 255;
+                        //row.Background.Freeze();
+                    }
+                    catch { }
+                });
+                });
+
+            task.Start();
+            Task.Run(() => task);
+            //if (!equalsKey)
+            //{
+            //    for (int i = 0; i<totalReceivedaPacket.Count; i++)
+            //    {
+            //        equalsKey = rowColor.ContainsKey(totalReceivedaPacket.Keys.ElementAt(i)[0]);
+            //    }
+            //}
+
+
+            
+
+
+            //try
+            //{
+            //    dataGrid.Dispatcher.Invoke(new Action(() =>
+            //    {
+                    
+            //        int count = 0;
+            //        foreach (var Row in dataGrid.Items)
+            //        {
+
+            //            //count++;
+            //            //MessageBox.Show(count.ToString());
+
+            //            var row = dataGrid.ItemContainerGenerator.ContainerFromItem(Row) as DataGridRow;
+            //            KeyValuePair<string[], int[]> item = (KeyValuePair<string[], int[]>)row.Item;
+            //            DataGridCell cell = GetCell(row, 0);
+            //            cell.Background = rowColor[item.Key[0]];
+            //            row.Foreground = rowColor[item.Key[0]];
+            //            row.FontWeight = FontWeights.Bold;
+            //        }
+            //    }));
+            //    dataGrid.ItemsSource = dataSource.ToList();
+            //}
+            //catch { }
+
+        }
+
         // -------------------- Ayarlar Buton Fonksiyonu --------------------
         public void AyarlarClicked(object sender, RoutedEventArgs e)
         {
-            if(timer != null) timer.Stop();
+
+            //if(timer != null) timer.Stop();
             enumMatchWindow.Show();
         }
 
@@ -443,6 +564,7 @@ namespace PacketAnalysisApp
         private void enumKaydetClick(object sender, RoutedEventArgs e)
         {
             enumStruct = enumMatchWindow.enumStruct;
+            if (timer != null) timer.Stop();
             createTotalPacketDict();
             updateGrid();
         }
@@ -450,6 +572,9 @@ namespace PacketAnalysisApp
 
         public void updateGrid()
         {
+            rowColorStart = true;
+            rowColor = new Dictionary<string, SolidColorBrush>();
+
             foreach (var button in buttonsToRemove)
             {
                 buttonPiePanel.Children.Remove(button);
@@ -475,18 +600,22 @@ namespace PacketAnalysisApp
                     Values = chartValuesList[name],
                     DataLabels = true,
                     LabelPoint = labelPoint,
-                    //Fill = Brushes.DarkBlue,
                     FontSize = 12
                 };
                 piechartPaket.Add(pieSeries);
 
 
+                //rowColor.Add(enumStruct[enumMatchWindow.paketName].Values.ElementAt(i), new SolidColorBrush(sColor.Color));
+
+
                 //chartViewModels.Add(totalReceivedaPacket.Keys.ElementAt(i), new RealTimeChartViewModel());
 
-               
+
             }
             pieChart.Series = piechartPaket;
 
+
+            // PieChart'taki dilim renklerini alın
 
             paketName = enumMatchWindow.paketName;
 
@@ -495,6 +624,7 @@ namespace PacketAnalysisApp
             frekansColumn.Binding = new Binding("Value[0]");
             toplamColumn.Binding = new Binding("Value[1]");
             dataGrid.ItemsSource = dataSource;
+
             //dataGrid.ItemsSource = totalReceivedaPacket.ToList();
             //dataGrid.ItemsSource = enumStruct[enumMatchWindow.paketName];
 
@@ -505,8 +635,76 @@ namespace PacketAnalysisApp
             timer.Interval = TimeSpan.FromMilliseconds(1000);
             timer.Tick += UpdateFrekans;
             timer.Start();
+
         }
 
+        private T FindVisualChild<T>(Visual parent) where T : Visual
+        {
+            T child = default(T);
+            int numVisuals = VisualTreeHelper.GetChildrenCount(parent);
+
+            for (int i = 0; i < numVisuals; i++)
+            {
+                Visual v = (Visual)VisualTreeHelper.GetChild(parent, i);
+                child = v as T;
+
+                if (child == null)
+                {
+                    child = FindVisualChild<T>(v);
+                }
+
+                if (child != null)
+                {
+                    break;
+                }
+            }
+
+            return child;
+        }
+
+        private DataGridCell GetCell(DataGridRow row, int columnIndex)
+        {
+            if (row != null && columnIndex >= 0)
+            {
+                DataGridCellsPresenter cellsPresenter = FindVisualChild<DataGridCellsPresenter>(row);
+                if (cellsPresenter != null)
+                {
+                    return (DataGridCell)cellsPresenter.ItemContainerGenerator.ContainerFromIndex(columnIndex);
+                }
+            }
+            return null;
+        }
+
+        public void setColor()
+        {
+            //try
+            //{
+            //    dataGrid.Dispatcher.Invoke(new Action(() =>
+            //    {
+            //        int count = 0;
+            //        foreach (var Row in dataGrid.Items)piechartloaded
+            //        {
+            //            //count++;
+            //            //MessageBox.Show(count.ToString());
+
+            //            var row = dataGrid.ItemContainerGenerator.ContainerFromItem(Row) as DataGridRow;
+            //            KeyValuePair<string[], int[]> item = (KeyValuePair<string[], int[]>)row.Item;
+            //            DataGridCell cell = GetCell(row, 0);
+            //            cell.Background = rowColor[item.Key[0]];
+            //            row.Foreground = rowColor[item.Key[0]];
+            //            row.FontWeight = FontWeights.Bold;
+            //        }                    
+            //    }));
+            //    dataGrid.ItemsSource = dataSource;
+            //}
+            //catch { }
+
+        }
+
+        private void PieChartLoaded(object sender, RoutedEventArgs e)
+        {
+            //deneme();
+        }
 
         private void enumMatchClosed(object sender, EventArgs e)
         {
@@ -533,17 +731,25 @@ namespace PacketAnalysisApp
             //textBox.Text = string.Empty;
         }
 
-        public void CompDict(string[] arr)
+        public byte[] DecryptAes(byte[] encrypted)
         {
-            for (int i = 0; i < totalReceivedaPacket.Count; i++)
+            using (Aes aesAlg = Aes.Create())
             {
-                if (totalReceivedaPacket.Keys.ElementAt(i)[0] == arr[0] & totalReceivedaPacket.Keys.ElementAt(i)[1] == arr[1])
+                aesAlg.Key = Key;
+                aesAlg.IV = IV;
+
+                ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+
+                using (MemoryStream msDecrypt = new MemoryStream())
                 {
-                    totalReceivedaPacket.Values.ElementAt(i)[1] += 1;
-                    break;
+                    using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
+                    {
+                        csDecrypt.Write(encrypted, 0, encrypted.Length);
+                        csDecrypt.FlushFinalBlock();
+                        return msDecrypt.ToArray();
+                    }
                 }
             }
-
         }
 
         public void receiveData()
@@ -551,13 +757,18 @@ namespace PacketAnalysisApp
             bytes = new byte[6]; 
 
             while (!stop)
-            {
+            {                
                 bytes = ReceivingSocketExtensions.ReceiveFrameBytes(subSocket);
+                bytes = DecryptAes(bytes);
 
+                if (rowColorStart)
+                {
+                    deneme();
+                    rowColorStart = false;
+                }
 
-
-                string[] paket_proje = new string[] { enumStruct[paketName].Values.ElementAt((int)bytes[0]),
-                                            enumStruct[enumStruct[paketName].Values.ElementAt((int)bytes[0])].Values.ElementAt((int)bytes[1]) };
+                string[] paket_proje = new string[] { enumStruct[paketName].Values.ElementAt((int)bytes[paketByte]),
+                                            enumStruct[enumStruct[paketName].Values.ElementAt((int)bytes[paketByte])].Values.ElementAt((int)bytes[projeByte]) };
     
                 //CompDict(paket_proje);
                 totalReceivedaPacket[paket_proje][1] += 1;
@@ -674,13 +885,14 @@ namespace PacketAnalysisApp
 
         private void ConnectButtonClicked(object sender, RoutedEventArgs e)
         {
+            
             if (timer != null) timer.Stop();
             //Thread subscriber = new Thread(new ThreadStart(receiveData));
             subscriber.Abort();
             //Thread.Sleep(1000);
             stop = true;
             //Thread.Sleep(1000);
-            subSocket.Close();
+            subSocket.Dispose();
             
 
             try
@@ -691,6 +903,7 @@ namespace PacketAnalysisApp
                 subSocket.Connect("tcp://" + ipBox.Text + ":" + portBox.Text);
                 subSocket.SubscribeToAnyTopic();
                 stop = false;
+                disconnectButton.IsEnabled = true;
                 //timer.Start();
             }
             catch
@@ -699,28 +912,63 @@ namespace PacketAnalysisApp
                 return;
             }
 
-            
-            createTotalPacketDict();
-            updateGrid();
-            socketPanel.Visibility = Visibility.Collapsed;
-            this.WindowState = WindowState.Maximized;
+            if (startConnect)
+            {
+                createTotalPacketDict();
+                updateGrid();
+                this.WindowState = WindowState.Maximized;
+                startConnect = false;
+            }
+            else
+            {
+                if (timer != null) timer.Start();
+                foreach (var button in paketButtons)
+                {
+                    button.Value.Visibility = Visibility.Visible;
+                }
+            }
+            borderSocketPanel.Visibility = Visibility.Collapsed;
 
             subscriber = new Thread(new ThreadStart(receiveData));
             subscriber.IsBackground = true;
             subscriber.Start();
+
+        }
+
+        private void DisconnectButtonClicked(object sender, RoutedEventArgs e)
+        {
+            subscriber.Abort();
+            stop = true;
+            disconnect = true;
+            if (!subSocket.IsDisposed) subSocket.Close();
         }
 
         private void SocketPanelButtonClicked(object sender, RoutedEventArgs e)
         {
-            foreach (var button in paketButtons)
+
+            if (!startConnect)
             {
-                button.Value.Visibility = Visibility.Collapsed;
+                if (borderSocketPanel.Visibility == Visibility.Visible)
+                {
+                    borderSocketPanel.Visibility = Visibility.Collapsed;
+                    foreach (var button in paketButtons)
+                    {
+                        button.Value.Visibility = Visibility.Visible;
+                    }
+                }
+                else
+                {
+                    borderSocketPanel.Visibility = Visibility.Visible;
+                    foreach (var button in paketButtons)
+                    {
+                        button.Value.Visibility = Visibility.Collapsed;
+                    }
+                    foreach (var chart in barCharts)
+                    {
+                        chart.Value.Visibility = Visibility.Collapsed;
+                    }
+                }
             }
-            foreach (var chart in barCharts)
-            {
-                chart.Value.Visibility = Visibility.Collapsed;
-            }
-            socketPanel.Visibility = Visibility.Visible;
 
         }
 
