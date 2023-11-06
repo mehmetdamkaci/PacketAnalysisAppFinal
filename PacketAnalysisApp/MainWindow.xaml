@@ -95,7 +95,7 @@
                 <DataGrid.RowDetailsTemplate >
                     <DataTemplate >
                         <StackPanel>
-                            <Label Content="{Binding Key, Converter={StaticResource KeyValueConverter}}" HorizontalContentAlignment="Center" FontWeight="Bold" Foreground="White" Background="DimGray" Margin="20,5,20,0">
+                            <Label Content="{Binding Key, Converter={StaticResource KeyValueConverter}}" HorizontalContentAlignment="Center" FontWeight="Bold" Foreground="White" Background="Transparent" Margin="20,5,20,0">
                                 <!--<Label.Content>
                                     <MultiBinding Converter="{StaticResource KeyValueConverter}">
                                         <Binding Path="Key" />
@@ -105,11 +105,11 @@
                                     </MultiBinding>
                                 </Label.Content>-->
                             </Label>
-                            <StackPanel Margin="20,0,20,0" Orientation="Horizontal" Background="DimGray">
+                            <StackPanel Margin="20,0,20,0" Orientation="Horizontal" Background="Transparent">
                                 <Button Content="Zoom-" HorizontalContentAlignment="Center" Width="40" Click="Button_Click" Loaded="zoomButtonLoaded"/>
                                 <Button Content="REAL" HorizontalContentAlignment="Center" Width="40" Click="realButton_Click" Loaded="realButtonLoaded"/>
                             </StackPanel>
-                            <lvc:CartesianChart Margin="20,0,20,10" x:Name="realTimeChart" Background="DimGray" Zoom="None" Loaded="LoadTextBlock" ScrollMode="None" Pan="X"
+                            <lvc:CartesianChart Margin="20,0,20,10" x:Name="realTimeChart" Background="Transparent" Zoom="None" Loaded="LoadTextBlock" ScrollMode="None" Pan="X"
                                                 DisableAnimations ="True" Hoverable="False" AllowDrop="False" DataTooltip="{x:Null}" Focusable="True" MouseWheel="ChartZoomEvent"
                                                 MouseLeftButtonDown="ChartPanEvent" MouseLeftButtonUp="ChartPanEvent">
                                 <lvc:CartesianChart.CacheMode>
@@ -139,7 +139,7 @@
         <Border CornerRadius="5" BorderBrush="Black" BorderThickness="1" Background="LightGray" Height="25" VerticalAlignment="Top" Margin="0,-22,40,0" HorizontalAlignment="Right" Width="200" Grid.Column="1">
             <StackPanel Margin="0,0,10,0" Height="50" VerticalAlignment="Top" HorizontalAlignment="Right" Width="214">
                 <TextBox x:Name="searchBox" Text="Ara" TextWrapping="Wrap" Background="LightGray" BorderThickness="0"
-                                 FontWeight="Bold" VerticalContentAlignment="Center" TextChanged="searchBox_TextChanged" 
+                                 FontWeight="Bold" VerticalContentAlignment="Center"
                                  Width="150" Height="23" RenderTransformOrigin="0.511,0.5" KeyDown="TextBox_KeyDown"/>
             </StackPanel>
         </Border>
@@ -151,7 +151,7 @@
 
         <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Column="2" Margin="0,0,0,71">
             <StackPanel x:Name="buttonPiePanel"  Orientation="Vertical">
-                <lvc:PieChart x:Name="pieChart" Foreground="AliceBlue" Loaded="PieChartLoaded"
+                <lvc:PieChart x:Name="pieChart" Foreground="AliceBlue"
                         InnerRadius="0" LegendLocation="Bottom" Hoverable="False" Series="{Binding SeriesCollection}" 
                         Height="314" DisableAnimations="True" Margin="0,0,0,80" >
                     <lvc:PieChart.CacheMode>

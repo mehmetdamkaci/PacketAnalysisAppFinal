@@ -29,10 +29,8 @@ namespace PacketAnalysisApp
 
     public partial class EnumMatchWindow : Window
     {
-
         public Dictionary<string, Dictionary<int, string>> enumStruct = new Dictionary<string, Dictionary<int, string>>();
         public Dictionary<string, Dictionary<int, string>> enumStructMain = new Dictionary<string, Dictionary<int, string>>();
-
 
         public event Action<Dictionary<string, Dictionary<int, string>>> UpdatedList;
 
@@ -192,7 +190,6 @@ namespace PacketAnalysisApp
             KaydetButton.Click += KaydetClick;
             KaydetButton.Width = 100;
             kaydetAnaSayfaButon.Children.Add(KaydetButton);
-            //stackPanel.Children.Add(KaydetButton);
             buttons.Add(KaydetButton);
 
         }
@@ -351,7 +348,6 @@ namespace PacketAnalysisApp
             ButtonOkandBack.Children.Add(enumOK);
 
             enumStack.Children.Add(ButtonOkandBack);
-            //enumStack.Children.Add(enumOK);
 
 
             scrollViewer = new ScrollViewer();
@@ -360,10 +356,7 @@ namespace PacketAnalysisApp
 
             scrollViewer.Margin = clickedButton.Margin;
 
-            stackPanel.Children.Add(scrollViewer);
-
-            //enumWindow.Content = scrollViewer;
-            //enumWindow.Show();            
+            stackPanel.Children.Add(scrollViewer);          
         }
 
         private void backMouseLive(object sender, MouseEventArgs e)
@@ -636,35 +629,6 @@ namespace PacketAnalysisApp
             kaydetAnaSayfaButon.Children.Add(anaSayfa);
             if (!stackPanel.Children.Contains(kaydetAnaSayfaButon)) stackPanel.Children.Add(kaydetAnaSayfaButon);
 
-
-            //MessageBox.Show(buttons.Count.ToString());
-
-            //for(int i = 0; i < buttons.Count; i++)
-            //{
-
-            //    foreach (var text in comboText)
-            //    {
-            //        if (text != "")
-            //        {
-            //            if (buttons[i].Name == text) 
-            //            {
-
-            //                buttons[i].IsEnabled = false;
-            //                buttons[i].Foreground = Brushes.Black;
-            //                //stackPanel.Children.Remove(buttons[i]);
-            //            } 
-            //            else
-            //            {
-            //                MessageBox.Show(buttons[i].Name);
-            //                //buttons[i].Visibility = Visibility.Collapsed;
-            //            }
-            //            comboList.Remove(text);
-            //        }
-
-            //    }
-
-            //}
-
             foreach (TextBox textBox in textBoxes)
             {
                 if (textBox.Name == buttonContent)
@@ -687,10 +651,6 @@ namespace PacketAnalysisApp
             configData.Name = paketName;
             File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
 
-            //clickedButton.IsEnabled = true;
-            //clickedButton.Width = 200;
-            //clickedButton.MouseLeave += buttonMouseLeave;
-            //clickedButton.MouseMove -= buttonMouseMove;
             enumWindow.Close();
         }
 
@@ -942,12 +902,15 @@ namespace PacketAnalysisApp
             {
                 userName = currentUser.Name;
             }
+            
+            
 
-            if (!Directory.Exists("C:\\" + userName + "\\AppData\\Roaming\\PacketAnalysis"))
+            if (!Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PacketAnalysis")))
             {
-                Directory.CreateDirectory("C:\\" + userName + "\\AppData\\Roaming\\PacketAnalysis");
+                Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PacketAnalysis"));
             }
-            newPath = "C:\\" + userName + "\\AppData\\Roaming\\PacketAnalysis\\Matched_" + path.Substring(path.LastIndexOf('\\') + 1);
+            newPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PacketAnalysis") + "\\Matched_" + path.Substring(path.LastIndexOf('\\') + 1);
+            MessageBox.Show(newPath);
             //newPath = path.Substring(0, path.LastIndexOf("\\")) + "\\" + "new" + path.Substring(path.LastIndexOf('\\') + 1);
             if (File.Exists(newPath))
             {
