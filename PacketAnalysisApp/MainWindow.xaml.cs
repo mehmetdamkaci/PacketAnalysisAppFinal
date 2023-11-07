@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -48,7 +47,7 @@ namespace PacketAnalysisApp
 
         string paketName = string.Empty;
 
-        Dictionary<string, ChartValues<int>> chartValuesList = new Dictionary<string, ChartValues<int>>();
+        Dictionary<string, ChartValues<int>> pieChartValues = new Dictionary<string, ChartValues<int>>();
 
         private DispatcherTimer timer;
 
@@ -133,7 +132,7 @@ namespace PacketAnalysisApp
 
         
 
-        public void createTotalPacketDict()
+        public void createDataStruct()
         {
             barCharts = new Dictionary<string, CartesianChart>();
             barColumnSeries = new Dictionary<string, ColumnSeries>();
@@ -149,6 +148,8 @@ namespace PacketAnalysisApp
             chartStatuses = new Dictionary<string, string>();
             paketButtons = new Dictionary<string, Button>();
             totalReceivedPacket = new Dictionary<string[], int[]>(new StringArrayComparer());
+
+
 
             for (int i = 0; i < enumStruct[enumMatchWindow.paketName].Count; i++)
             {
@@ -365,14 +366,15 @@ namespace PacketAnalysisApp
         // -------------------- Ayarlar Buton Fonksiyonu --------------------
         public void AyarlarClicked(object sender, RoutedEventArgs e)
         {
-            if (disconnect)
-            {
-                enumMatchWindow.Show();
-            }
-            else
-            {
-                MessageBox.Show("Soket Panelden Bağlanıyı Kesiniz.");
-            }
+            enumMatchWindow.Show();
+            //if (disconnect)
+            //{
+            //    enumMatchWindow.Show();
+            //}
+            //else
+            //{
+            //    MessageBox.Show("Soket Panelden Bağlanıyı Kesiniz.");
+            //}
             
         }
 
@@ -412,7 +414,7 @@ namespace PacketAnalysisApp
         {
             enumStruct = enumMatchWindow.enumStruct;
             if (timer != null) timer.Stop();
-            createTotalPacketDict();
+            createDataStruct();
             updateGrid();
         }
 
@@ -432,7 +434,7 @@ namespace PacketAnalysisApp
                 buttonPiePanel.Children.Remove(chart);
             }
 
-            chartValuesList = new Dictionary<string, ChartValues<int>>();
+            pieChartValues = new Dictionary<string, ChartValues<int>>();
             piechartPaket = new SeriesCollection();
 
             Func<ChartPoint, string> labelPoint = chartPoint => string.Format("{0} ({1:P})", chartPoint.Y, chartPoint.Participation);
@@ -440,11 +442,11 @@ namespace PacketAnalysisApp
             for (int i = 0; i < enumStruct[enumMatchWindow.paketName].Values.Count; i++)
             {
                 string name = enumStruct[enumMatchWindow.paketName].Values.ElementAt(i);
-                chartValuesList.Add(name, new ChartValues<int> { 0 });
+                pieChartValues.Add(name, new ChartValues<int> { 0 });
                 PieSeries pieSeries = new PieSeries
                 {
                     Title = name,
-                    Values = chartValuesList[name],
+                    Values = pieChartValues[name],
                     DataLabels = true,
                     LabelPoint = labelPoint,
                     FontSize = 12
@@ -601,7 +603,7 @@ namespace PacketAnalysisApp
                         }                          
                     }                    
 
-                    chartValuesList[paket_proje[0]][0] = total;
+                    pieChartValues[paket_proje[0]][0] = total;
 
                     var item = dataSource.FirstOrDefault(i => i.Key.SequenceEqual(paket_proje));
                     if (item.Key == null)
@@ -712,7 +714,7 @@ namespace PacketAnalysisApp
 
             if (startConnect)
             {
-                createTotalPacketDict();
+                createDataStruct();
                 updateGrid();
                 this.WindowState = WindowState.Maximized;
                 startConnect = false;
@@ -738,6 +740,7 @@ namespace PacketAnalysisApp
             subscriber.Abort();
             stop = true;
             disconnect = true;
+            enumMatchWindow.disconnect = disconnect;
             if (!subSocket.IsDisposed) subSocket.Close();
             borderSocketPanel.Visibility = Visibility.Collapsed;
             foreach (var button in paketButtons)

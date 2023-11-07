@@ -1,11 +1,14 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Principal;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -13,11 +16,6 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Newtonsoft.Json;
-using System.Windows.Markup;
-using System.Runtime.CompilerServices;
-using System.Security.Principal;
-using System.Threading.Tasks;
 
 namespace PacketAnalysisApp
 {
@@ -80,6 +78,7 @@ namespace PacketAnalysisApp
         CONFIG configData;
 
         public string jsonPath = "PacketConfig.json";
+        public bool disconnect = false;
         public EnumMatchWindow()
         {
             string json = File.ReadAllText(jsonPath);
@@ -485,7 +484,6 @@ namespace PacketAnalysisApp
 
         private void enumOKClick(object sender, RoutedEventArgs e)
         {
-
             if (gridItem != null)
             {
                 foreach (ComboBox combo in gridItemComboList)
@@ -747,6 +745,11 @@ namespace PacketAnalysisApp
 
         private void OKClick(object sender, RoutedEventArgs e)
         {
+            if (!disconnect)
+            {
+                MessageBox.Show("Soket Panelden Bağlanıyı Kesiniz.");
+                return;
+            }
             viewEnums(FileNameTextBox.Text);
         }
 
@@ -910,7 +913,6 @@ namespace PacketAnalysisApp
                 Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PacketAnalysis"));
             }
             newPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PacketAnalysis") + "\\Matched_" + path.Substring(path.LastIndexOf('\\') + 1);
-            MessageBox.Show(newPath);
             //newPath = path.Substring(0, path.LastIndexOf("\\")) + "\\" + "new" + path.Substring(path.LastIndexOf('\\') + 1);
             if (File.Exists(newPath))
             {
