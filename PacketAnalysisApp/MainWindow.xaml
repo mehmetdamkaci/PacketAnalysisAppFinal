@@ -153,7 +153,7 @@
             <StackPanel x:Name="buttonPiePanel"  Orientation="Vertical">
                 <lvc:PieChart x:Name="pieChart" Foreground="AliceBlue"
                         InnerRadius="0" LegendLocation="Bottom" Hoverable="False" Series="{Binding SeriesCollection}" 
-                        Height="314" DisableAnimations="True" Margin="0,0,0,80" >
+                        Height="314" DisableAnimations="True" Margin="0,0,0,80" DataClick="PieChartClick" >
                     <lvc:PieChart.CacheMode>
                         <BitmapCache EnableClearType="False" 
                                                 RenderAtScale="1"
@@ -186,6 +186,7 @@
 
         <Button x:Name="socketPanelButton" Grid.Column="2" Content="Soket Panel" Margin="0,0,0,10" Height="20" 
                 Click="SocketPanelButtonClicked" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="100"/>
+        <Button Grid.Column="2" Content="Button" HorizontalAlignment="Left" Margin="10,587,0,0" VerticalAlignment="Top" Click="exportClick"/>
 
 
 

@@ -18,11 +18,15 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using System.Xml.Linq;
+using static NetMQ.NetMQSelector;
 
 namespace PacketAnalysisApp
 {
     public partial class MainWindow : Window
     {
+        string paket = "";
+
         byte[] Key = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20 };
         byte[] IV = new byte[] { 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30 };
         int paketByte = 0;
@@ -88,6 +92,41 @@ namespace PacketAnalysisApp
             enumStruct = enumMatchWindow.enumStructMain;
         }
 
+        private void exportClick(object sender, RoutedEventArgs e)
+        {
+
+            // Verileri CSV dosyasına kaydet
+            string csvFilePath = "data.csv";
+            SaveDataToCSV(csvFilePath);
+
+            // CSV dosyasını LibreOffice Calc ile aç
+            try
+            {
+                System.Diagnostics.Process.Start("C:\\Program Files\\LibreOffice\\program\\scalc.exe", csvFilePath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Calc başlatılırken bir hata oluştu: " + ex.Message);
+            }
+        }
+
+        private void SaveDataToCSV(string filePath)
+        {
+            using (StreamWriter writer = new StreamWriter(filePath))
+            {
+                //chartList[new string[] { "YZB_SURECLER", "SUREC_1" }].Series.ToList().
+                //    ForEach(series =>
+                //    {
+                //        writer.WriteLine($"{series}");
+
+                //    });
+                writer.WriteLine($"PAKET, PROJE, TOPLAM");
+                foreach (var item in totalReceivedPacket)
+                {
+                    writer.WriteLine($"{item.Key[0]}, {item.Key[1]}, {item.Value[1]}");
+                }
+            }
+        }
 
         // -------------------- PENCERE MOUSE EVENTLERİ --------------------
         private void Border_MouseDown(object sender, MouseButtonEventArgs e)
@@ -119,6 +158,94 @@ namespace PacketAnalysisApp
                 }
             }
         }
+
+        public void barChartFilter(string name)
+        {
+
+            foreach (var paketButton in paketButtons)
+            {
+                if (paketButton.Key != name)
+                {
+
+                    if (paketButton.Value.Visibility != Visibility.Collapsed)
+                    {
+                        paketButton.Value.Visibility = Visibility.Collapsed;
+                    }
+                    else
+                    {
+                        paketButton.Value.Visibility = Visibility.Visible;
+                    }
+                }
+                
+            }
+
+            foreach (var bar in barCharts)
+            {
+                if (bar.Key == name)
+                {
+                    if (bar.Value.Visibility == Visibility.Collapsed)
+                    {
+                        bar.Value.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        bar.Value.Visibility = Visibility.Collapsed;
+                    }
+                }
+            }
+        }
+
+        private void PieChartClick(object sender, ChartPoint chartpoint)
+        {
+            bool control = false;
+            dataGrid.Dispatcher.Invoke(new Action(() =>
+            {
+                
+                for (int i = 0; i < dataGrid.Items.Count; i++)
+                {
+                    DataGridRow row = (DataGridRow)dataGrid.ItemContainerGenerator.ContainerFromIndex(i);
+                    if (row != null)
+                    {
+                        string[] name = ((KeyValuePair<string[], int[]>)row.Item).Key;
+
+                        if (paket == chartpoint.SeriesView.Title)
+                        {
+                            row.Visibility = Visibility.Visible;
+                            barCharts[name[0]].Visibility = Visibility.Collapsed;
+                            paketButtons[name[0]].Visibility = Visibility.Visible;
+                            control = true;
+                        }
+                        else if (paket != chartpoint.SeriesView.Title & name[0] == chartpoint.SeriesView.Title)
+                        {
+                            row.Visibility = Visibility.Visible;
+
+                        }
+                        else
+                        {
+                            if (row.Visibility == Visibility.Visible) row.Visibility = Visibility.Collapsed;
+                        }                        
+                    }
+                }
+            }));
+
+
+            if (!control) 
+            {
+                paket = chartpoint.SeriesView.Title;
+                foreach (var paketButton in paketButtons)
+                {
+                    if (paketButton.Key == chartpoint.SeriesView.Title) paketButton.Value.Visibility = Visibility.Visible;
+                    else paketButton.Value.Visibility = Visibility.Collapsed;
+                }
+
+                foreach (var bar in barCharts)
+                {
+                    if (bar.Key == chartpoint.SeriesView.Title) bar.Value.Visibility = Visibility.Visible;
+                    else bar.Value.Visibility = Visibility.Collapsed;
+                }
+            } 
+            else paket = "";
+        }        
 
         private void zoomButtonLoaded(object sender, RoutedEventArgs e)
         {
@@ -654,36 +781,7 @@ namespace PacketAnalysisApp
         private void paketButtonClicked(object sender, RoutedEventArgs e)
         {
             Button clickedButton = sender as Button;
-            foreach(var paketButton in paketButtons)
-            {
-                if(paketButton.Key != clickedButton.Name)
-                {
-
-                    if (paketButton.Value.Visibility != Visibility.Collapsed)
-                    {
-                        paketButton.Value.Visibility = Visibility.Collapsed;
-                    }
-                    else
-                    {
-                        paketButton.Value.Visibility = Visibility.Visible;
-                    }
-                }
-            }
-
-            foreach(var bar in barCharts)
-            {
-                if(bar.Key == clickedButton.Name)
-                {
-                    if(bar.Value.Visibility == Visibility.Collapsed)
-                    {
-                        bar.Value.Visibility = Visibility.Visible;
-                    }
-                    else
-                    {
-                        bar.Value.Visibility = Visibility.Collapsed;
-                    }
-                }
-            }
+            barChartFilter(clickedButton.Name);
         }
 
         private void ConnectButtonClicked(object sender, RoutedEventArgs e)
