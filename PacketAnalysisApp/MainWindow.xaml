@@ -185,8 +185,9 @@
         </ScrollViewer>
 
         <Button x:Name="socketPanelButton" Grid.Column="2" Content="Soket Panel" Margin="0,0,0,10" Height="20" 
-                Click="SocketPanelButtonClicked" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="100"/>
-        <Button Grid.Column="2" Content="Button" HorizontalAlignment="Left" Margin="10,587,0,0" VerticalAlignment="Top" Click="exportClick"/>
+                Click="SocketPanelButtonClicked" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="100"  Background="LightGray" FontWeight="Bold"/>
+        <Button Grid.Column="1" Content="Dışarı Aktar" Margin="0,0,40,5" Click="exportClick" Height="25" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="81"
+                Background="LightGray" FontWeight="Bold"/>
 
 
 

@@ -2,6 +2,8 @@
 using LiveCharts.Wpf;
 using NetMQ;
 using NetMQ.Sockets;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -18,8 +20,6 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using System.Xml.Linq;
-using static NetMQ.NetMQSelector;
 
 namespace PacketAnalysisApp
 {
@@ -94,38 +94,164 @@ namespace PacketAnalysisApp
 
         private void exportClick(object sender, RoutedEventArgs e)
         {
-
-            // Verileri CSV dosyasına kaydet
-            string csvFilePath = "data.csv";
-            SaveDataToCSV(csvFilePath);
-
-            // CSV dosyasını LibreOffice Calc ile aç
-            try
+            Task.Run(() =>
             {
-                System.Diagnostics.Process.Start("C:\\Program Files\\LibreOffice\\program\\scalc.exe", csvFilePath);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Calc başlatılırken bir hata oluştu: " + ex.Message);
-            }
+                using (var package = new ExcelPackage())
+                {
+                    // İlk sayfa oluşturun
+                    var worksheetTable = package.Workbook.Worksheets.Add("Genel Tablo");
+                    var worksheetFrakans = package.Workbook.Worksheets.Add("Frakans Tablosu");
+                    var worksheetChart = package.Workbook.Worksheets.Add("Grafikler");
+
+                    int rowTable = 2;
+                    int columnFreq = 2;
+
+                    worksheetTable.Cells[1, 1].Value = "PAKET";
+                    worksheetTable.Cells[1, 2].Value = "PROJE";
+                    worksheetTable.Cells[1, 3].Value = "TOPLAM";
+                    worksheetTable.Cells[1, 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    worksheetTable.Cells[1, 2].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    worksheetTable.Cells[1, 3].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    worksheetTable.Cells[1, 1].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
+                    worksheetTable.Cells[1, 2].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
+                    worksheetTable.Cells[1, 3].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
+
+
+                    // Verileri ekleyin
+                    foreach (var item in totalReceivedPacket)
+                    {
+                        string keyConcatenated = item.Key[0] + "_" + item.Key[1];
+
+                        worksheetFrakans.Cells[1, columnFreq].Value = keyConcatenated;
+                        worksheetFrakans.Cells[1, columnFreq].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                        worksheetFrakans.Cells[1, columnFreq].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
+                        worksheetFrakans.Cells[1, columnFreq].AutoFitColumns();
+
+                        worksheetTable.Cells[rowTable, 1].Value = item.Key[0];
+                        worksheetTable.Cells[rowTable, 2].Value = item.Key[1];
+                        worksheetTable.Cells[rowTable, 3].Value = item.Value[1];
+                        worksheetTable.Cells[rowTable, 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                        worksheetTable.Cells[rowTable, 2].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                        worksheetTable.Cells[rowTable, 3].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                        worksheetTable.Cells[rowTable, 1].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
+                        worksheetTable.Cells[rowTable, 2].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
+                        worksheetTable.Cells[rowTable, 3].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
+                        
+
+                        rowTable++;
+                        columnFreq++;
+                    }
+                    worksheetTable.Cells.AutoFitColumns();
+                    var a = chartXLabels;
+                    var b = lineValuesList;
+                    int[] values = new int[lineValuesList.ElementAt(0).Value.Count];
+                    lineValuesList.ElementAt(0).Value.CopyTo(values, 0);
+                    worksheetFrakans.Cells["A2"].LoadFromCollection(chartXLabels);
+
+                    for (int i = 2; i < totalReceivedPacket.Count + 2; i++)
+                    {
+                        for (int j = 2; j < a.Count + 2; j++)
+                        {
+                            worksheetFrakans.Cells[j, i].Value = b.ElementAt(i - 2).Value[j - 2];
+                            //worksheetFrakans.Cells[j, i].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                            //worksheetFrakans.Cells[j, i].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[totalReceivedPacket.Keys.ElementAt(i - 2)[0]]));
+                        }
+                    }
+
+                    string paket = totalReceivedPacket.ElementAt(0).Key[0];
+                    int chartRow = 0;
+                    int chartColumn = 0;
+                    for (int col = 2; col <= worksheetFrakans.Dimension.Columns; col++) // İlk sütun başlık olabilir, bu nedenle 2'den başlıyoruz
+                    {
+                        if (paket != totalReceivedPacket.ElementAt(col - 2).Key[0])
+                        {
+                            chartRow++;
+                            chartColumn = 0;
+                        }
+                        var chart = worksheetChart.Drawings.AddChart("Chart" + col, OfficeOpenXml.Drawing.Chart.eChartType.LineMarkers);
+                        chart.SetPosition(chartRow*15, 0, chartColumn*13, 0);
+                        chart.SetSize(800, 300);
+                        var series = chart.Series.Add(worksheetFrakans.Cells[2, col, worksheetFrakans.Dimension.End.Row, col], worksheetFrakans.Cells[2, 1, worksheetFrakans.Dimension.End.Row, 1]);
+                        series.Header = worksheetFrakans.Cells[1, col].Text;
+                        paket = totalReceivedPacket.ElementAt(col - 2).Key[0];
+                        chartColumn++;
+                    }
+
+                    var excelFile = new FileInfo("veriler.xlsx");
+                    package.SaveAs(excelFile);
+                }
+            });
+
+
+            //Excel.Application excelApp = new Excel.Application();
+            //Excel.Workbook workbook = excelApp.Workbooks.Add();
+            //Excel.Worksheet worksheetTable = (Excel.Worksheet)workbook.Worksheets.Add();
+            //worksheetTable.Name = "Genel Tablo";
+            //Excel.Worksheet worksheetFrakans = (Excel.Worksheet)workbook.Worksheets.Add();
+            //worksheetFrakans.Name = "Frekans Tablosu";
+
+            //worksheetTable.Cells[1, 1] = "PAKET";
+            //worksheetTable.Cells[1, 2] = "PROJE";
+            //worksheetTable.Cells[1, 3] = "TOPLAM";
+            //worksheetTable.Cells[1, 1].Interior.Color = System.Drawing.Color.LightGray;
+            //worksheetTable.Cells[1, 2].Interior.Color = System.Drawing.Color.LightGray;
+            //worksheetTable.Cells[1, 3].Interior.Color = System.Drawing.Color.LightGray;
+
+            ////Gridi Export Etme
+            //int rowTable = 2;
+            //int columnFreq = 2;
+            //foreach (var item in totalReceivedPacket)
+            //{
+            //    worksheetFrakans.Cells[1, columnFreq] = item.Key[0] + "_" + item.Key[1];
+            //    worksheetFrakans.Cells[1, columnFreq].Interior.Color = ColorConverter(rowColor[item.Key[0]]);
+            //    worksheetFrakans.Cells[1, columnFreq].EntireColumn.AutoFit();
+            //    worksheetFrakans.Cells[1, columnFreq].EntireRow.AutoFit();
+
+            //    worksheetTable.Cells[rowTable, 1] = item.Key[0];
+            //    worksheetTable.Cells[rowTable, 2] = item.Key[1];
+            //    worksheetTable.Cells[rowTable, 3] = item.Value[1];
+            //    worksheetTable.Cells[rowTable, 1].Interior.Color = ColorConverter(rowColor[item.Key[0]]);
+            //    worksheetTable.Cells[rowTable, 2].Interior.Color = ColorConverter(rowColor[item.Key[0]]);
+            //    worksheetTable.Cells[rowTable, 3].Interior.Color = ColorConverter(rowColor[item.Key[0]]);
+            //    worksheetTable.Cells[rowTable, 1].EntireColumn.AutoFit();
+            //    worksheetTable.Cells[rowTable, 2].EntireColumn.AutoFit();
+            //    worksheetTable.Cells[rowTable, 3].EntireColumn.AutoFit();
+
+            //    rowTable++;
+            //    columnFreq++;
+            //}
+
+            ////Frekansları Export Etme
+            //using (var package = new ExcelPackage())
+            //{
+            //    // Yeni bir çalışma kitabı oluşturun
+            //    var worksheet = package.Workbook.Worksheets.Add("Veriler");
+
+            //    // Verileri belirli bir sütuna yükleyin
+            //    worksheet.Cells["A1"].LoadFromCollection(chartXLabels, false);
+
+            //    // Excel dosyasını kaydedin
+            //    var excelFile = new FileInfo("veriler.xlsx");
+            //    package.SaveAs(excelFile);
+            //}
+
+
+            //string filePath = Environment.CurrentDirectory + "\\data.xlsx";
+
+            //workbook.SaveAs(filePath);
+
+            //workbook.Close();
+            //Marshal.ReleaseComObject(workbook);
+            //excelApp.Quit();
+            //Marshal.ReleaseComObject(excelApp);
         }
 
-        private void SaveDataToCSV(string filePath)
+        private System.Drawing.Color ColorConverter(SolidColorBrush brush)
         {
-            using (StreamWriter writer = new StreamWriter(filePath))
-            {
-                //chartList[new string[] { "YZB_SURECLER", "SUREC_1" }].Series.ToList().
-                //    ForEach(series =>
-                //    {
-                //        writer.WriteLine($"{series}");
-
-                //    });
-                writer.WriteLine($"PAKET, PROJE, TOPLAM");
-                foreach (var item in totalReceivedPacket)
-                {
-                    writer.WriteLine($"{item.Key[0]}, {item.Key[1]}, {item.Value[1]}");
-                }
-            }
+            byte red = brush.Color.R;
+            byte green = brush.Color.G;
+            byte blue = brush.Color.B;
+            return System.Drawing.Color.FromArgb(red, green, blue);
         }
 
         // -------------------- PENCERE MOUSE EVENTLERİ --------------------
