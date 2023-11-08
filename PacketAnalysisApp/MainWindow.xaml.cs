@@ -98,7 +98,6 @@ namespace PacketAnalysisApp
             {
                 using (var package = new ExcelPackage())
                 {
-                    // İlk sayfa oluşturun
                     var worksheetTable = package.Workbook.Worksheets.Add("Genel Tablo");
                     var worksheetFrakans = package.Workbook.Worksheets.Add("Frakans Tablosu");
                     var worksheetChart = package.Workbook.Worksheets.Add("Grafikler");
@@ -117,7 +116,6 @@ namespace PacketAnalysisApp
                     worksheetTable.Cells[1, 3].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
 
 
-                    // Verileri ekleyin
                     foreach (var item in totalReceivedPacket)
                     {
                         string keyConcatenated = item.Key[0] + "_" + item.Key[1];
@@ -153,8 +151,21 @@ namespace PacketAnalysisApp
                         for (int j = 2; j < a.Count + 2; j++)
                         {
                             worksheetFrakans.Cells[j, i].Value = b.ElementAt(i - 2).Value[j - 2];
-                            //worksheetFrakans.Cells[j, i].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                            //worksheetFrakans.Cells[j, i].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[totalReceivedPacket.Keys.ElementAt(i - 2)[0]]));
+                            worksheetFrakans.Cells[j,i].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+                            var cell = worksheetFrakans.Cells[j, i];
+                            var border = cell.Style.Border;
+
+                            // Hücre kenarlarını kalın yap
+                            border.Top.Style = ExcelBorderStyle.Thick;
+                            border.Left.Style = ExcelBorderStyle.Thick;
+                            border.Bottom.Style = ExcelBorderStyle.Thick;
+                            border.Right.Style = ExcelBorderStyle.Thick;
+
+                            var brushColor = rowColor[totalReceivedPacket.Keys.ElementAt(i - 2)[0]];
+                            var color = new SolidColorBrush(Color.FromArgb((byte)70, brushColor.Color.R, brushColor.Color.G, brushColor.Color.B));
+                            worksheetFrakans.Cells[j, i].Style.Fill.PatternType = ExcelFillStyle.LightGray;
+                            worksheetFrakans.Cells[j, i].Style.Fill.BackgroundColor.SetColor(ColorConverter(color));
                         }
                     }
 
@@ -251,7 +262,7 @@ namespace PacketAnalysisApp
             byte red = brush.Color.R;
             byte green = brush.Color.G;
             byte blue = brush.Color.B;
-            return System.Drawing.Color.FromArgb(red, green, blue);
+            return System.Drawing.Color.FromArgb((byte)10,red, green, blue);
         }
 
         // -------------------- PENCERE MOUSE EVENTLERİ --------------------
