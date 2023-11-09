@@ -21,7 +21,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using OfficeOpenXml.Drawing.Chart;
-
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
+using LinqForEEPlus;
 
 namespace PacketAnalysisApp
 {
@@ -108,9 +109,9 @@ namespace PacketAnalysisApp
                     int rowTable = 2;
                     int columnFreq = 2;
 
-                    worksheetTable.Cells[1, 1].Value = "PAKET";
-                    worksheetTable.Cells[1, 2].Value = "PROJE";
-                    worksheetTable.Cells[1, 3].Value = "TOPLAM";
+                    worksheetTable.Cells[1, 1].Value = "PAKET ADI";
+                    worksheetTable.Cells[1, 2].Value = "PROJE ADI";
+                    worksheetTable.Cells[1, 3].Value = "TOPLAM GELEN PAKET SAYISI";
                     worksheetTable.Cells[1, 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
                     worksheetTable.Cells[1, 2].Style.Fill.PatternType = ExcelFillStyle.Solid;
                     worksheetTable.Cells[1, 3].Style.Fill.PatternType = ExcelFillStyle.Solid;
@@ -118,9 +119,33 @@ namespace PacketAnalysisApp
                     worksheetTable.Cells[1, 2].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
                     worksheetTable.Cells[1, 3].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
 
-
+                    int barChartPos = 2;
+                    string paket = "";
                     foreach (var item in totalReceivedPacket)
                     {
+                        
+                        if (paket != item.Key[0])
+                        {
+
+                            int count = 0;
+                            foreach (var item2 in totalReceivedPacket)
+                            {
+                                if (item2.Key[0] == item.Key[0])
+                                {
+                                    count++;
+                                }
+                            }
+
+                            var chart = worksheetTable.Drawings.AddChart(item.Key[0], eChartType.ColumnClustered);
+                            chart.SetPosition(barChartPos - 1, 0, 3, 0);  
+                            
+                            var series = chart.Series.Add(worksheetTable.Cells[barChartPos, 3, rowTable + count - 1, 3], worksheetTable.Cells[barChartPos, 2, rowTable + count - 1, 2]);
+                            series.Fill.Color = ColorConverter(rowColor[item.Key[0]]);
+                            series.Header = item.Key[0];
+                            chart.SetSize(800, (rowTable - barChartPos + count) * 20);
+                            barChartPos = rowTable + count;
+                        }
+
                         string keyConcatenated = item.Key[0] + "_" + item.Key[1];
 
                         worksheetFrakans.Cells[1, columnFreq].Value = keyConcatenated;
@@ -140,18 +165,15 @@ namespace PacketAnalysisApp
 
                         rowTable++;
                         columnFreq++;
+                        paket = item.Key[0];
                     }
+
+
                     worksheetTable.Cells.AutoFitColumns();
                     int length = chartXLabels.IndexOf(chartXLabels.Last());
                     var freq = lineValuesList;
 
                     worksheetFrakans.Cells["A2"].LoadFromCollection(chartXLabels.ToList().GetRange(0,length));
-
-                    
-                    //foreach(var f in freq)
-                    //{
-                    //    MessageBox.Show(time.Count + "   " + f.Value.Count.ToString() );
-                    //}
 
                     for (int i = 2; i < totalReceivedPacket.Count + 2; i++)
                     {
@@ -187,21 +209,21 @@ namespace PacketAnalysisApp
                         }
                     }
 
-                    string paket = totalReceivedPacket.ElementAt(0).Key[0];
+                    paket = totalReceivedPacket.ElementAt(0).Key[0];
                     int chartRow = 0;
                     int chartColumn = 0;
-                    for (int col = 2; col <= worksheetFrakans.Dimension.Columns; col++) // İlk sütun başlık olabilir, bu nedenle 2'den başlıyoruz
-                    {
+                    for (int col = 2; col <= worksheetFrakans.Dimension.Columns; col++)
+                    {                        
                         if (paket != totalReceivedPacket.ElementAt(col - 2).Key[0])
                         {
                             chartRow++;
                             chartColumn = 0;
                         }
                         var chart = worksheetChart.Drawings.AddChart("Chart" + col, eChartType.LineMarkers);                        
-                        chart.SetPosition(chartRow*15, 0, chartColumn*13, 0);
+                        chart.SetPosition(chartRow*15, 0, 1 + chartColumn*13, 0);
                         chart.SetSize(800, 300);
                         var series = chart.Series.Add(worksheetFrakans.Cells[2, col, worksheetFrakans.Dimension.End.Row, col], worksheetFrakans.Cells[2, 1, worksheetFrakans.Dimension.End.Row, 1]);
-                        series.Header = worksheetFrakans.Cells[1, col].Text;
+                        series.Header = worksheetTable.Cells[col, 2].Text;
                         paket = totalReceivedPacket.ElementAt(col - 2).Key[0];
                         chartColumn++;
                     }
