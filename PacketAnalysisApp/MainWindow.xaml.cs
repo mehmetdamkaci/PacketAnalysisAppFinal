@@ -20,6 +20,8 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using OfficeOpenXml.Drawing.Chart;
+
 
 namespace PacketAnalysisApp
 {
@@ -68,7 +70,6 @@ namespace PacketAnalysisApp
         Dictionary<string, string> chartStatuses = new Dictionary<string, string>();
         Button zoomButton = new Button();
         Button realButton = new Button();
-        string chartStatus = "DEFAULT";
 
 
         //----------------- PAKET BUTONLARI ----------------------
@@ -81,6 +82,7 @@ namespace PacketAnalysisApp
         public MainWindow()
         {            
             InitializeComponent();
+            exportButton.IsEnabled = false;
             startConnect = true;
             disconnectButton.IsEnabled = false;
             subscriber = new Thread(new ThreadStart(receiveData));
@@ -92,6 +94,7 @@ namespace PacketAnalysisApp
             enumStruct = enumMatchWindow.enumStructMain;
         }
 
+        //Dışarı aktarma butonu fonksiyonu (Excel İşlemleri)
         private void exportClick(object sender, RoutedEventArgs e)
         {
             Task.Run(() =>
@@ -133,30 +136,36 @@ namespace PacketAnalysisApp
                         worksheetTable.Cells[rowTable, 3].Style.Fill.PatternType = ExcelFillStyle.Solid;
                         worksheetTable.Cells[rowTable, 1].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
                         worksheetTable.Cells[rowTable, 2].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
-                        worksheetTable.Cells[rowTable, 3].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
-                        
+                        worksheetTable.Cells[rowTable, 3].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));                        
 
                         rowTable++;
                         columnFreq++;
                     }
                     worksheetTable.Cells.AutoFitColumns();
-                    var a = chartXLabels;
-                    var b = lineValuesList;
-                    int[] values = new int[lineValuesList.ElementAt(0).Value.Count];
-                    lineValuesList.ElementAt(0).Value.CopyTo(values, 0);
-                    worksheetFrakans.Cells["A2"].LoadFromCollection(chartXLabels);
+                    int length = chartXLabels.IndexOf(chartXLabels.Last());
+                    var freq = lineValuesList;
+
+                    worksheetFrakans.Cells["A2"].LoadFromCollection(chartXLabels.ToList().GetRange(0,length));
+
+                    
+                    //foreach(var f in freq)
+                    //{
+                    //    MessageBox.Show(time.Count + "   " + f.Value.Count.ToString() );
+                    //}
 
                     for (int i = 2; i < totalReceivedPacket.Count + 2; i++)
                     {
-                        for (int j = 2; j < a.Count + 2; j++)
+                        for (int j = 2; j < length + 2; j++)
                         {
-                            worksheetFrakans.Cells[j, i].Value = b.ElementAt(i - 2).Value[j - 2];
+                            int value = freq.ElementAt(i - 2).Value[j - 2];
+                            worksheetFrakans.Cells[j, i].Value = value;
                             worksheetFrakans.Cells[j,i].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
 
                             var cell = worksheetFrakans.Cells[j, i];
                             var border = cell.Style.Border;
+                            var fontWeight = cell.Style.Font;
+                            fontWeight.Bold = true;
 
-                            // Hücre kenarlarını kalın yap
                             border.Top.Style = ExcelBorderStyle.Thick;
                             border.Left.Style = ExcelBorderStyle.Thick;
                             border.Bottom.Style = ExcelBorderStyle.Thick;
@@ -164,8 +173,17 @@ namespace PacketAnalysisApp
 
                             var brushColor = rowColor[totalReceivedPacket.Keys.ElementAt(i - 2)[0]];
                             var color = new SolidColorBrush(Color.FromArgb((byte)70, brushColor.Color.R, brushColor.Color.G, brushColor.Color.B));
-                            worksheetFrakans.Cells[j, i].Style.Fill.PatternType = ExcelFillStyle.LightGray;
-                            worksheetFrakans.Cells[j, i].Style.Fill.BackgroundColor.SetColor(ColorConverter(color));
+
+                            if (value == 0)
+                            {
+                                worksheetFrakans.Cells[j, i].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                                worksheetFrakans.Cells[j, i].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Red);
+                            } 
+                            else 
+                            {
+                                worksheetFrakans.Cells[j, i].Style.Fill.PatternType = ExcelFillStyle.LightGray;
+                                worksheetFrakans.Cells[j, i].Style.Fill.BackgroundColor.SetColor(ColorConverter(color));
+                            } 
                         }
                     }
 
@@ -179,7 +197,7 @@ namespace PacketAnalysisApp
                             chartRow++;
                             chartColumn = 0;
                         }
-                        var chart = worksheetChart.Drawings.AddChart("Chart" + col, OfficeOpenXml.Drawing.Chart.eChartType.LineMarkers);
+                        var chart = worksheetChart.Drawings.AddChart("Chart" + col, eChartType.LineMarkers);                        
                         chart.SetPosition(chartRow*15, 0, chartColumn*13, 0);
                         chart.SetSize(800, 300);
                         var series = chart.Series.Add(worksheetFrakans.Cells[2, col, worksheetFrakans.Dimension.End.Row, col], worksheetFrakans.Cells[2, 1, worksheetFrakans.Dimension.End.Row, 1]);
@@ -188,81 +206,21 @@ namespace PacketAnalysisApp
                         chartColumn++;
                     }
 
-                    var excelFile = new FileInfo("veriler.xlsx");
+                    var excelFile = new FileInfo("veriler_" + DateTime.Now.ToString("ddMMyy") + ".xlsx");
                     package.SaveAs(excelFile);
+                    MessageBox.Show("Tablo Dışarı Aktarıldı");
+                    package.Dispose();
                 }
             });
-
-
-            //Excel.Application excelApp = new Excel.Application();
-            //Excel.Workbook workbook = excelApp.Workbooks.Add();
-            //Excel.Worksheet worksheetTable = (Excel.Worksheet)workbook.Worksheets.Add();
-            //worksheetTable.Name = "Genel Tablo";
-            //Excel.Worksheet worksheetFrakans = (Excel.Worksheet)workbook.Worksheets.Add();
-            //worksheetFrakans.Name = "Frekans Tablosu";
-
-            //worksheetTable.Cells[1, 1] = "PAKET";
-            //worksheetTable.Cells[1, 2] = "PROJE";
-            //worksheetTable.Cells[1, 3] = "TOPLAM";
-            //worksheetTable.Cells[1, 1].Interior.Color = System.Drawing.Color.LightGray;
-            //worksheetTable.Cells[1, 2].Interior.Color = System.Drawing.Color.LightGray;
-            //worksheetTable.Cells[1, 3].Interior.Color = System.Drawing.Color.LightGray;
-
-            ////Gridi Export Etme
-            //int rowTable = 2;
-            //int columnFreq = 2;
-            //foreach (var item in totalReceivedPacket)
-            //{
-            //    worksheetFrakans.Cells[1, columnFreq] = item.Key[0] + "_" + item.Key[1];
-            //    worksheetFrakans.Cells[1, columnFreq].Interior.Color = ColorConverter(rowColor[item.Key[0]]);
-            //    worksheetFrakans.Cells[1, columnFreq].EntireColumn.AutoFit();
-            //    worksheetFrakans.Cells[1, columnFreq].EntireRow.AutoFit();
-
-            //    worksheetTable.Cells[rowTable, 1] = item.Key[0];
-            //    worksheetTable.Cells[rowTable, 2] = item.Key[1];
-            //    worksheetTable.Cells[rowTable, 3] = item.Value[1];
-            //    worksheetTable.Cells[rowTable, 1].Interior.Color = ColorConverter(rowColor[item.Key[0]]);
-            //    worksheetTable.Cells[rowTable, 2].Interior.Color = ColorConverter(rowColor[item.Key[0]]);
-            //    worksheetTable.Cells[rowTable, 3].Interior.Color = ColorConverter(rowColor[item.Key[0]]);
-            //    worksheetTable.Cells[rowTable, 1].EntireColumn.AutoFit();
-            //    worksheetTable.Cells[rowTable, 2].EntireColumn.AutoFit();
-            //    worksheetTable.Cells[rowTable, 3].EntireColumn.AutoFit();
-
-            //    rowTable++;
-            //    columnFreq++;
-            //}
-
-            ////Frekansları Export Etme
-            //using (var package = new ExcelPackage())
-            //{
-            //    // Yeni bir çalışma kitabı oluşturun
-            //    var worksheet = package.Workbook.Worksheets.Add("Veriler");
-
-            //    // Verileri belirli bir sütuna yükleyin
-            //    worksheet.Cells["A1"].LoadFromCollection(chartXLabels, false);
-
-            //    // Excel dosyasını kaydedin
-            //    var excelFile = new FileInfo("veriler.xlsx");
-            //    package.SaveAs(excelFile);
-            //}
-
-
-            //string filePath = Environment.CurrentDirectory + "\\data.xlsx";
-
-            //workbook.SaveAs(filePath);
-
-            //workbook.Close();
-            //Marshal.ReleaseComObject(workbook);
-            //excelApp.Quit();
-            //Marshal.ReleaseComObject(excelApp);
         }
 
+        //Excel Hücreleri için renk dönüştürücü
         private System.Drawing.Color ColorConverter(SolidColorBrush brush)
         {
             byte red = brush.Color.R;
             byte green = brush.Color.G;
             byte blue = brush.Color.B;
-            return System.Drawing.Color.FromArgb((byte)10,red, green, blue);
+            return System.Drawing.Color.FromArgb(red, green, blue);
         }
 
         // -------------------- PENCERE MOUSE EVENTLERİ --------------------
@@ -332,6 +290,7 @@ namespace PacketAnalysisApp
             }
         }
 
+        //PieCharta tıklandığında filtreleme işlemleri
         private void PieChartClick(object sender, ChartPoint chartpoint)
         {
             bool control = false;
@@ -384,6 +343,7 @@ namespace PacketAnalysisApp
             else paket = "";
         }        
 
+        //Grafik için butonlar
         private void zoomButtonLoaded(object sender, RoutedEventArgs e)
         {
             zoomButton = sender as Button;
@@ -395,7 +355,7 @@ namespace PacketAnalysisApp
         }
 
         
-
+        //Enum Dosyası değiştirildiğinde ve program başlatıldığında veri yapılarını oluşturan fonksiyon
         public void createDataStruct()
         {
             barCharts = new Dictionary<string, CartesianChart>();
@@ -475,6 +435,7 @@ namespace PacketAnalysisApp
 
         }
 
+        //Bir saniyede bir tabloyu ve frekans değerlerini güncelleyen fonksiyon
         private void UpdateFrekans(object sender, EventArgs e)
         {
 
@@ -532,7 +493,7 @@ namespace PacketAnalysisApp
         }
 
 
-
+        //Chart mouse ile sürüklendiğinde oluşan event
         private void ChartPanEvent(object sender, MouseButtonEventArgs e )
         {
             CartesianChart chart = sender as CartesianChart;
@@ -542,7 +503,7 @@ namespace PacketAnalysisApp
             }
         }
 
-
+        //Mouse ile grafik büyütülmek istendiğinde oluşan event
         private void ChartZoomEvent(object sender, MouseWheelEventArgs e)
         {
             CartesianChart chart = sender as CartesianChart;
@@ -553,6 +514,7 @@ namespace PacketAnalysisApp
 
         }
         
+        //tablonun paketlerine göre renklerini ayarlayan fonksiyon
         public void setColor()
         {
            Task.Run(() =>
@@ -630,19 +592,11 @@ namespace PacketAnalysisApp
         // -------------------- Ayarlar Buton Fonksiyonu --------------------
         public void AyarlarClicked(object sender, RoutedEventArgs e)
         {
-            enumMatchWindow.Show();
-            //if (disconnect)
-            //{
-            //    enumMatchWindow.Show();
-            //}
-            //else
-            //{
-            //    MessageBox.Show("Soket Panelden Bağlanıyı Kesiniz.");
-            //}
-            
+            enumMatchWindow.Show();         
         }
 
-        private void LoadTextBlock(object sender, RoutedEventArgs e)
+        //Frekans grafikleri yüklendiğinde oluşan event
+        private void LoadFreqChart(object sender, RoutedEventArgs e)
         {
             dataGrid.Dispatcher.Invoke(new Action(() =>
             {
@@ -659,6 +613,7 @@ namespace PacketAnalysisApp
             }));            
         }
 
+        //Detay butonuna tıklandığında oluşan event
         public void ButtonDetayClicked(object sender, RoutedEventArgs e)
         {
             dataGrid.Dispatcher.Invoke(new Action(() =>
@@ -674,6 +629,7 @@ namespace PacketAnalysisApp
             }));
         }
 
+        //Enum eşleştirilmesi tamamlandığında oluşan event
         private void enumKaydetClick(object sender, RoutedEventArgs e)
         {
             enumStruct = enumMatchWindow.enumStruct;
@@ -682,7 +638,7 @@ namespace PacketAnalysisApp
             updateGrid();
         }
 
-
+        //Program başladığında ve enum dosyası değiştiğinde grafiği güncelleyen event
         public void updateGrid()
         {
             rowColorStart = true;
@@ -738,6 +694,7 @@ namespace PacketAnalysisApp
 
         }
 
+        //Hücreleri bulmayı sağlayan fonksiyon
         private T FindVisualChild<T>(Visual parent) where T : Visual
         {
             T child = default(T);
@@ -782,6 +739,7 @@ namespace PacketAnalysisApp
             enumMatchWindow.OkKaydetLog.Click += enumKaydetClick;
         }
 
+        //Filtrelemeyi sağlayan fonksiyon
         private void TextBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == System.Windows.Input.Key.Enter)
@@ -811,6 +769,7 @@ namespace PacketAnalysisApp
             }
         }
 
+        //AES-256 şifresi çözen fonksiyon
         public byte[] DecryptAes(byte[] encrypted)
         {
             using (Aes aesAlg = Aes.Create())
@@ -832,6 +791,7 @@ namespace PacketAnalysisApp
             }
         }
 
+        //Paketlerin alındığı fonksiyon bir thread'te çalışır
         public void receiveData()
         {
             bytes = new byte[6]; 
@@ -853,6 +813,7 @@ namespace PacketAnalysisApp
                     if (rowColorStart & dataGrid.Items.Count == totalReceivedPacket.Count)
                     {
                         setColor();
+                        exportButton.IsEnabled = true;
                         rowColorStart = false;
                     }
 
@@ -883,6 +844,7 @@ namespace PacketAnalysisApp
             }
         }
 
+        //Program kapandığında oluşan event
         private void MainAppClosed(object sender, EventArgs e)
         {
             subscriber.Abort();
@@ -890,7 +852,8 @@ namespace PacketAnalysisApp
             Environment.Exit(0);
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        //Grafikteki ZOOM- butonuna tıklandığında oluşan event
+        private void zoomButton_Click(object sender, RoutedEventArgs e)
         {
             dataGrid.Dispatcher.Invoke(new Action(() =>
             {
@@ -902,6 +865,7 @@ namespace PacketAnalysisApp
                 }
             }));
         }
+        //Grafikteki REAL butonuna tıklandığında oluşan event
         private void realButton_Click(object sender, RoutedEventArgs e)
         {
             dataGrid.Dispatcher.Invoke(new Action(() =>
@@ -915,12 +879,14 @@ namespace PacketAnalysisApp
             }));
         }
 
+        //Paket butonlarına tıklandığında oluşan event
         private void paketButtonClicked(object sender, RoutedEventArgs e)
         {
             Button clickedButton = sender as Button;
             barChartFilter(clickedButton.Name);
         }
 
+        //Soket Paneldeki bağlan butonuna tıklandığında oluşan event
         private void ConnectButtonClicked(object sender, RoutedEventArgs e)
         {
 
@@ -970,6 +936,7 @@ namespace PacketAnalysisApp
 
         }
 
+        //Soket Paneldeki bağlantıyı kes butonuna tıklandığında oluşan event
         private void DisconnectButtonClicked(object sender, RoutedEventArgs e)
         {
             subscriber.Abort();
@@ -984,6 +951,7 @@ namespace PacketAnalysisApp
             }
         }
 
+        //Soket Panel butonuna tıklandığında oluşan event
         private void SocketPanelButtonClicked(object sender, RoutedEventArgs e)
         {
 

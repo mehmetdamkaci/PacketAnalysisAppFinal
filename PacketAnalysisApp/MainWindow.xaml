@@ -106,10 +106,10 @@
                                 </Label.Content>-->
                             </Label>
                             <StackPanel Margin="20,0,20,0" Orientation="Horizontal" Background="Transparent">
-                                <Button Content="Zoom-" HorizontalContentAlignment="Center" Width="40" Click="Button_Click" Loaded="zoomButtonLoaded"/>
+                                <Button Content="Zoom-" HorizontalContentAlignment="Center" Width="40" Click="zoomButton_Click" Loaded="zoomButtonLoaded"/>
                                 <Button Content="REAL" HorizontalContentAlignment="Center" Width="40" Click="realButton_Click" Loaded="realButtonLoaded"/>
                             </StackPanel>
-                            <lvc:CartesianChart Margin="20,0,20,10" x:Name="realTimeChart" Background="Transparent" Zoom="None" Loaded="LoadTextBlock" ScrollMode="None" Pan="X"
+                            <lvc:CartesianChart Margin="20,0,20,10" x:Name="realTimeChart" Background="Transparent" Zoom="None" Loaded="LoadFreqChart" ScrollMode="None" Pan="X"
                                                 DisableAnimations ="True" Hoverable="False" AllowDrop="False" DataTooltip="{x:Null}" Focusable="True" MouseWheel="ChartZoomEvent"
                                                 MouseLeftButtonDown="ChartPanEvent" MouseLeftButtonUp="ChartPanEvent">
                                 <lvc:CartesianChart.CacheMode>
@@ -186,7 +186,7 @@
 
         <Button x:Name="socketPanelButton" Grid.Column="2" Content="Soket Panel" Margin="0,0,0,10" Height="20" 
                 Click="SocketPanelButtonClicked" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="100"  Background="LightGray" FontWeight="Bold"/>
-        <Button Grid.Column="1" Content="Dışarı Aktar" Margin="0,0,40,5" Click="exportClick" Height="25" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="81"
+        <Button x:Name="exportButton" Grid.Column="1" Content="Dışarı Aktar" Margin="0,0,40,5" Click="exportClick" Height="25" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="81"
                 Background="LightGray" FontWeight="Bold"/>
 
 
