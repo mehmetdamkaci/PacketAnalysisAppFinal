@@ -21,8 +21,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using OfficeOpenXml.Drawing.Chart;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
-using LinqForEEPlus;
 
 namespace PacketAnalysisApp
 {
@@ -71,6 +69,7 @@ namespace PacketAnalysisApp
         Dictionary<string, string> chartStatuses = new Dictionary<string, string>();
         Button zoomButton = new Button();
         Button realButton = new Button();
+        Button chartExportButton = new Button();
 
 
         //----------------- PAKET BUTONLARI ----------------------
@@ -95,145 +94,292 @@ namespace PacketAnalysisApp
             enumStruct = enumMatchWindow.enumStructMain;
         }
 
-        //Dışarı aktarma butonu fonksiyonu (Excel İşlemleri)
-        private void exportClick(object sender, RoutedEventArgs e)
+
+        //Grafikleri Dışarı aktarma fonksiyonu
+        private void exportChartButtonClick(object sender, RoutedEventArgs e)
         {
-            Task.Run(() =>
+
+            dataGrid.Dispatcher.Invoke(new Action(() =>
             {
-                using (var package = new ExcelPackage())
+                var selecteItem = dataGrid.SelectedItem;
+                if (selecteItem != null)
                 {
-                    var worksheetTable = package.Workbook.Worksheets.Add("Genel Tablo");
-                    var worksheetFrakans = package.Workbook.Worksheets.Add("Frakans Tablosu");
-                    var worksheetChart = package.Workbook.Worksheets.Add("Grafikler");
+                    KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)selecteItem;
 
-                    int rowTable = 2;
-                    int columnFreq = 2;
+                    string path = "";
+                    Microsoft.Win32.SaveFileDialog openFileDlg = new Microsoft.Win32.SaveFileDialog();
+                    openFileDlg.FileName = selectedRow.Key[0] + "_" + selectedRow.Key[1] + ".xlsx";
+                    Nullable<bool> result = openFileDlg.ShowDialog();
 
-                    worksheetTable.Cells[1, 1].Value = "PAKET ADI";
-                    worksheetTable.Cells[1, 2].Value = "PROJE ADI";
-                    worksheetTable.Cells[1, 3].Value = "TOPLAM GELEN PAKET SAYISI";
-                    worksheetTable.Cells[1, 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                    worksheetTable.Cells[1, 2].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                    worksheetTable.Cells[1, 3].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                    worksheetTable.Cells[1, 1].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
-                    worksheetTable.Cells[1, 2].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
-                    worksheetTable.Cells[1, 3].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
-
-                    int barChartPos = 2;
-                    string paket = "";
-                    foreach (var item in totalReceivedPacket)
+                    if (result == true)
                     {
-                        
-                        if (paket != item.Key[0])
-                        {
-
-                            int count = 0;
-                            foreach (var item2 in totalReceivedPacket)
-                            {
-                                if (item2.Key[0] == item.Key[0])
-                                {
-                                    count++;
-                                }
-                            }
-
-                            var chart = worksheetTable.Drawings.AddChart(item.Key[0], eChartType.ColumnClustered);
-                            chart.SetPosition(barChartPos - 1, 0, 3, 0);  
-                            
-                            var series = chart.Series.Add(worksheetTable.Cells[barChartPos, 3, rowTable + count - 1, 3], worksheetTable.Cells[barChartPos, 2, rowTable + count - 1, 2]);
-                            series.Fill.Color = ColorConverter(rowColor[item.Key[0]]);
-                            series.Header = item.Key[0];
-                            chart.SetSize(800, (rowTable - barChartPos + count) * 20);
-                            barChartPos = rowTable + count;
-                        }
-
-                        string keyConcatenated = item.Key[0] + "_" + item.Key[1];
-
-                        worksheetFrakans.Cells[1, columnFreq].Value = keyConcatenated;
-                        worksheetFrakans.Cells[1, columnFreq].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                        worksheetFrakans.Cells[1, columnFreq].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
-                        worksheetFrakans.Cells[1, columnFreq].AutoFitColumns();
-
-                        worksheetTable.Cells[rowTable, 1].Value = item.Key[0];
-                        worksheetTable.Cells[rowTable, 2].Value = item.Key[1];
-                        worksheetTable.Cells[rowTable, 3].Value = item.Value[1];
-                        worksheetTable.Cells[rowTable, 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                        worksheetTable.Cells[rowTable, 2].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                        worksheetTable.Cells[rowTable, 3].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                        worksheetTable.Cells[rowTable, 1].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
-                        worksheetTable.Cells[rowTable, 2].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
-                        worksheetTable.Cells[rowTable, 3].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));                        
-
-                        rowTable++;
-                        columnFreq++;
-                        paket = item.Key[0];
+                        path = openFileDlg.FileName;
                     }
+                    else return;
 
+                   
 
-                    worksheetTable.Cells.AutoFitColumns();
+                    var package = new ExcelPackage();
+                    var worksheetFreqChart = package.Workbook.Worksheets.Add("Frekans Grafiği");
+
+                    worksheetFreqChart.Cells[1, 1].Value = "ZAMAN";
+                    worksheetFreqChart.Cells[1, 2].Value = "FREKANS";
+                    worksheetFreqChart.Cells[1, 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    worksheetFreqChart.Cells[1, 2].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    worksheetFreqChart.Cells[1, 1].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
+                    worksheetFreqChart.Cells[1, 2].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
+
+                    var chart = (ExcelLineChart)worksheetFreqChart.Drawings.AddChart("Chart", eChartType.LineMarkers);
+                    chart.SetPosition(1*20, 8*20);
+                    chart.SetSize(1500, 300);                    
+                    chart.Name = selectedRow.Key[0] + " PAKETİ " + selectedRow.Key[1] + " PROJESİ";
+                    
                     int length = chartXLabels.IndexOf(chartXLabels.Last());
                     var freq = lineValuesList;
 
-                    worksheetFrakans.Cells["A2"].LoadFromCollection(chartXLabels.ToList().GetRange(0,length));
-
-                    for (int i = 2; i < totalReceivedPacket.Count + 2; i++)
+                    for(int i = 2; i <= length + 2; i++)
                     {
-                        for (int j = 2; j < length + 2; j++)
-                        {
-                            int value = freq.ElementAt(i - 2).Value[j - 2];
-                            worksheetFrakans.Cells[j, i].Value = value;
-                            worksheetFrakans.Cells[j,i].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-
-                            var cell = worksheetFrakans.Cells[j, i];
-                            var border = cell.Style.Border;
-                            var fontWeight = cell.Style.Font;
-                            fontWeight.Bold = true;
-
-                            border.Top.Style = ExcelBorderStyle.Thick;
-                            border.Left.Style = ExcelBorderStyle.Thick;
-                            border.Bottom.Style = ExcelBorderStyle.Thick;
-                            border.Right.Style = ExcelBorderStyle.Thick;
-
-                            var brushColor = rowColor[totalReceivedPacket.Keys.ElementAt(i - 2)[0]];
-                            var color = new SolidColorBrush(Color.FromArgb((byte)70, brushColor.Color.R, brushColor.Color.G, brushColor.Color.B));
-
-                            if (value == 0)
-                            {
-                                worksheetFrakans.Cells[j, i].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                                worksheetFrakans.Cells[j, i].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Red);
-                            } 
-                            else 
-                            {
-                                worksheetFrakans.Cells[j, i].Style.Fill.PatternType = ExcelFillStyle.LightGray;
-                                worksheetFrakans.Cells[j, i].Style.Fill.BackgroundColor.SetColor(ColorConverter(color));
-                            } 
-                        }
+                        int value = freq[selectedRow.Key][i - 2];
+                        worksheetFreqChart.Cells[i, 2].Value = value;
+                        worksheetFreqChart.Cells[i, 1].Value = chartXLabels[i - 2];
                     }
 
-                    paket = totalReceivedPacket.ElementAt(0).Key[0];
-                    int chartRow = 0;
-                    int chartColumn = 0;
-                    for (int col = 2; col <= worksheetFrakans.Dimension.Columns; col++)
-                    {                        
-                        if (paket != totalReceivedPacket.ElementAt(col - 2).Key[0])
-                        {
-                            chartRow++;
-                            chartColumn = 0;
-                        }
-                        var chart = worksheetChart.Drawings.AddChart("Chart" + col, eChartType.LineMarkers);                        
-                        chart.SetPosition(chartRow*15, 0, 1 + chartColumn*13, 0);
-                        chart.SetSize(800, 300);
-                        var series = chart.Series.Add(worksheetFrakans.Cells[2, col, worksheetFrakans.Dimension.End.Row, col], worksheetFrakans.Cells[2, 1, worksheetFrakans.Dimension.End.Row, 1]);
-                        series.Header = worksheetTable.Cells[col, 2].Text;
-                        paket = totalReceivedPacket.ElementAt(col - 2).Key[0];
-                        chartColumn++;
-                    }
-
-                    var excelFile = new FileInfo("veriler_" + DateTime.Now.ToString("ddMMyy") + ".xlsx");
-                    package.SaveAs(excelFile);
-                    MessageBox.Show("Tablo Dışarı Aktarıldı");
+                    chart.Series.Add(worksheetFreqChart.Cells[1, 2, worksheetFreqChart.Dimension.End.Row, 2], worksheetFreqChart.Cells[1, 1, worksheetFreqChart.Dimension.End.Row, 1]);
+                    chart.Series[0].Header = selectedRow.Key[0] + " PAKETİ " + selectedRow.Key[1] + " PROJESİ";
+                    if (new FileInfo(@path) != null) package.SaveAs(new FileInfo(@path));
                     package.Dispose();
                 }
+     
+            }));
+        }
+
+        //Dışarı aktarma butonu fonksiyonu (Excel İşlemleri)
+        private void exportClick(object sender, RoutedEventArgs e)
+        {           
+            string path = "";
+
+            Microsoft.Win32.SaveFileDialog openFileDlg = new Microsoft.Win32.SaveFileDialog();
+            openFileDlg.FileName = "veriler_" + DateTime.Now.ToString("ddMMyy") + ".xlsx";
+            Nullable<bool> result = openFileDlg.ShowDialog();
+            
+            if (result == true)
+            {
+                path = openFileDlg.FileName;
+            }
+            else return;
+
+            if (path.Substring(path.LastIndexOf('.') + 1, 4) != "xlsx") path += ".xlsx";
+
+            var package = new ExcelPackage();
+            var worksheetTable = package.Workbook.Worksheets.Add("Genel Tablo");
+            var worksheetFrakans = package.Workbook.Worksheets.Add("Frakans Tablosu");
+            var worksheetChart = package.Workbook.Worksheets.Add("Grafikler");
+
+            exportButton.Visibility = Visibility.Collapsed;
+            progressBar.Visibility = Visibility.Visible;    
+            progressBar.Minimum = 0;
+            progressBar.Maximum = totalReceivedPacket.Count*2 + chartXLabels.Count;
+            Task.Run(() =>
+            {
+                ExcelPieChart pieExcelChart = (ExcelPieChart)worksheetTable.Drawings.AddChart("pieChart", eChartType.PieExploded3D);
+                var pieExcelSeries = pieExcelChart.Series;
+                pieExcelChart.DataLabel.ShowPercent = true;
+                pieExcelChart.DataLabel.ShowValue = true;
+                pieExcelChart.DataLabel.ShowLegendKey = true;
+
+                int rowTable = 2;
+                int columnFreq = 2;
+
+                worksheetTable.Cells[1, 1].Value = "PAKET ADI";
+                worksheetTable.Cells[1, 2].Value = "PROJE ADI";
+                worksheetTable.Cells[1, 3].Value = "TOPLAM GELEN PAKET SAYISI";
+                worksheetTable.Cells[1, 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                worksheetTable.Cells[1, 2].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                worksheetTable.Cells[1, 3].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                worksheetTable.Cells[1, 1].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
+                worksheetTable.Cells[1, 2].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
+                worksheetTable.Cells[1, 3].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
+
+                int barChartPos = 2;
+                string paket = "";
+                int pieRow = 1;
+                worksheetTable.Cells[pieRow, 19].Value = "PAKET ADI";
+                worksheetTable.Cells[pieRow, 20].Value = "TOPLAM GELEN PAKET SAYISI";
+                worksheetTable.Cells[pieRow, 19].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                worksheetTable.Cells[pieRow, 20].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                worksheetTable.Cells[pieRow, 19].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
+                worksheetTable.Cells[pieRow, 20].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
+
+                foreach (var item in totalReceivedPacket)
+                {                    
+                    if (paket != item.Key[0])
+                    {
+                        int count = 0;
+                        pieRow++;
+                        foreach (var item2 in totalReceivedPacket)
+                        {
+                            if (item2.Key[0] == item.Key[0])
+                            {
+                                count++;
+                            }
+                        }
+
+                        var chart = worksheetTable.Drawings.AddChart(item.Key[0], eChartType.ColumnClustered);
+                        chart.SetPosition(barChartPos - 1, 0, 3, 0);                              
+                        var series = chart.Series.Add(worksheetTable.Cells[barChartPos, 3, rowTable + count - 1, 3], worksheetTable.Cells[barChartPos, 2, rowTable + count - 1, 2]);
+
+
+                        worksheetTable.Cells[pieRow, 19].Value = item.Key[0];
+                        worksheetTable.Cells[pieRow, 19].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                        worksheetTable.Cells[pieRow, 19].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
+                        worksheetTable.Cells[pieRow, 19].Style.Font.Bold = true;
+
+                        worksheetTable.Cells[pieRow, 20].Formula = "Sum(" + worksheetTable.Cells[barChartPos, 3].Address +
+                                                                ":" + worksheetTable.Cells[rowTable + count - 1, 3].Address + ")";
+                        worksheetTable.Cells[pieRow, 20].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                        worksheetTable.Cells[pieRow, 20].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
+                        worksheetTable.Cells[pieRow, 20].Style.Font.Bold = true;
+                        worksheetTable.Cells[pieRow, 20].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+                        series.Fill.Color = ColorConverter(rowColor[item.Key[0]]);
+                        series.Header = item.Key[0];
+                        chart.SetSize(800, (rowTable - barChartPos + count) * 20);
+                        barChartPos = rowTable + count;
+                    }
+
+                    string keyConcatenated = item.Key[0] + "_" + item.Key[1];
+
+                    worksheetFrakans.Cells[1, columnFreq].Value = keyConcatenated;
+                    worksheetFrakans.Cells[1, columnFreq].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    worksheetFrakans.Cells[1, columnFreq].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
+                    worksheetFrakans.Cells[1, columnFreq].AutoFitColumns();
+
+                    worksheetTable.Cells[rowTable, 1].Value = item.Key[0];
+                    worksheetTable.Cells[rowTable, 1].Style.Font.Bold = true;
+                    worksheetTable.Cells[rowTable, 2].Style.Font.Bold = true;
+                    worksheetTable.Cells[rowTable, 3].Style.Font.Bold = true;
+
+                    worksheetTable.Cells[rowTable, 2].Value = item.Key[1];
+                    worksheetTable.Cells[rowTable, 3].Value = item.Value[1];
+                    worksheetTable.Cells[rowTable, 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    worksheetTable.Cells[rowTable, 2].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    worksheetTable.Cells[rowTable, 3].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    worksheetTable.Cells[rowTable, 1].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
+                    worksheetTable.Cells[rowTable, 2].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
+                    worksheetTable.Cells[rowTable, 3].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
+                    worksheetTable.Cells[rowTable, 3].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+                    rowTable++;
+                    columnFreq++;
+                    paket = item.Key[0];
+
+                    mainGrid.Dispatcher.Invoke(new Action(() => progressBar.Value += 1));
+                    
+                }
+                pieExcelChart.SetSize(250,500);
+                pieExcelChart.SetPosition((pieRow + pieChartValues.Count + 3)*10, 19*15 + 800);
+                pieExcelSeries.Add(worksheetTable.Cells[2, 20, pieRow , 20], worksheetTable.Cells[2, 19, pieRow, 19]);
+                worksheetTable.Cells.AutoFitColumns();
+                int length = chartXLabels.IndexOf(chartXLabels.Last());
+                var freq = lineValuesList;
+
+                worksheetFrakans.Cells["A2"].LoadFromCollection(chartXLabels.ToList().GetRange(0,length));
+
+                for (int i = 2; i < totalReceivedPacket.Count + 2; i++)
+                {
+                    for (int j = 2; j <= length + 2; j++)
+                    {
+                        int value = freq.ElementAt(i - 2).Value[j - 2];
+                        worksheetFrakans.Cells[j, i].Value = value;
+                        worksheetFrakans.Cells[j,i].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+                        var cell = worksheetFrakans.Cells[j, i];
+                        var border = cell.Style.Border;
+                        var fontWeight = cell.Style.Font;
+                        fontWeight.Bold = true;
+
+                        border.Top.Style = ExcelBorderStyle.Thick;
+                        border.Left.Style = ExcelBorderStyle.Thick;
+                        border.Bottom.Style = ExcelBorderStyle.Thick;
+                        border.Right.Style = ExcelBorderStyle.Thick;
+
+                        var brushColor = rowColor[totalReceivedPacket.Keys.ElementAt(i - 2)[0]];
+                        var color = new SolidColorBrush(Color.FromArgb((byte)70, brushColor.Color.R, brushColor.Color.G, brushColor.Color.B));
+
+                        if (value == 0)
+                        {
+                            worksheetFrakans.Cells[j, i].Style.Fill.PatternType = ExcelFillStyle.DarkGray;
+                            worksheetFrakans.Cells[j, i].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Red);
+                        } 
+                        else 
+                        {
+                            worksheetFrakans.Cells[j, i].Style.Fill.PatternType = ExcelFillStyle.LightGray;
+                            worksheetFrakans.Cells[j, i].Style.Fill.BackgroundColor.SetColor(ColorConverter(color));
+                        } 
+                    }
+                    mainGrid.Dispatcher.Invoke(new Action(() => progressBar.Value += 1));
+                }
+
+                paket = totalReceivedPacket.ElementAt(0).Key[0];
+                int chartRow = 0;
+                int chartColumn = 0;
+                for (int col = 2; col <= worksheetFrakans.Dimension.Columns; col++)
+                {                        
+                    if (paket != totalReceivedPacket.ElementAt(col - 2).Key[0])
+                    {
+                        chartRow++;
+                        chartColumn = 0;
+                    }                    
+                    var chart = (ExcelLineChart)worksheetChart.Drawings.AddChart("Chart" + col, eChartType.LineMarkers);                                        
+                    chart.SetPosition(chartRow*15, 0, 1 + chartColumn*13, 0);
+                    chart.SetSize(800, 300);
+                    var series = chart.Series.Add(worksheetFrakans.Cells[2, col, worksheetFrakans.Dimension.End.Row, col], worksheetFrakans.Cells[2, 1, worksheetFrakans.Dimension.End.Row, 1]);
+                    series.Header = worksheetTable.Cells[col, 2].Text;
+                    paket = totalReceivedPacket.ElementAt(col - 2).Key[0];
+                    chartColumn++;
+                    mainGrid.Dispatcher.Invoke(new Action(() => progressBar.Value += 1));
+                }
+
+                mainGrid.Dispatcher.Invoke(new Action(() => progressBar.Maximum += chartRow * 15 + 10));                
+                int countChartRow = 0;
+                for(int i = 0; i <= chartRow; i++)
+                {
+                    for(int j = 1; j <= 15;  j++)
+                    {
+                        mainGrid.Dispatcher.Invoke(new Action(() => progressBar.Value += 1));
+                        countChartRow++;
+                        worksheetChart.Cells[countChartRow, 1].Value = pieChartValues.ElementAt(i).Key;                            
+                        worksheetChart.Row(countChartRow).Style.Fill.PatternType = ExcelFillStyle.Solid;
+                        worksheetChart.Row(countChartRow).Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[pieChartValues.ElementAt(i).Key]));
+                    }
+                        
+                }
+                worksheetChart.Cells.AutoFitColumns();
+
+                mainGrid.Dispatcher.Invoke(new Action(() => progressBar.Value = progressBar.Maximum));
+                Thread.Sleep(1000);
+                if (new FileInfo(@path) != null) package.SaveAs(new FileInfo(@path));
+                package.Dispose();
+                mainGrid.Dispatcher.Invoke((new Action(() =>
+                {
+                    progressBar.Visibility = Visibility.Collapsed;
+                    progressBar.Value = 0;
+                    exportLabel.Visibility = Visibility.Visible;
+                })));
+                Thread.Sleep(1500);
+                mainGrid.Dispatcher.Invoke((new Action(() =>
+                {
+                    exportLabel.Visibility = Visibility.Collapsed;
+                    exportButton.Visibility = Visibility.Visible;
+                })));
+
+                
             });
+        }
+
+        private void BrowseExportButton(object sender, RoutedEventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         //Excel Hücreleri için renk dönüştürücü
@@ -363,9 +509,14 @@ namespace PacketAnalysisApp
                 }
             } 
             else paket = "";
-        }        
+        }
 
-        //Grafik için butonlar
+        //Grafik için butonla
+        private void exportChartButtonLoaded(object sender, RoutedEventArgs e)
+        {
+            chartExportButton = sender as Button;
+        }
+
         private void zoomButtonLoaded(object sender, RoutedEventArgs e)
         {
             zoomButton = sender as Button;

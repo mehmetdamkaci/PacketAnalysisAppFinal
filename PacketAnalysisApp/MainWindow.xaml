@@ -12,7 +12,7 @@
         <local:KeyValueConverter x:Key="KeyValueConverter" />
     </Window.Resources>
 
-    <Grid Margin="54,36,41,10">
+    <Grid  x:Name="mainGrid" Margin="54,36,41,10">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"></ColumnDefinition>
             <ColumnDefinition Width="*"/>
@@ -57,7 +57,8 @@
             <DataGrid Name="dataGrid" AutoGenerateColumns="False" Background="#FF696969" AlternatingRowBackground="LightGray" AlternationCount="2"
                       ItemsSource="{Binding Path=Packets}" SelectedItem="{Binding Path=paketID}" IsReadOnly="True" BorderThickness="0" 
                       CellStyle="{StaticResource Body_Content_DataGrid_Centering}" Margin="32,-32,0,34" SelectionUnit="FullRow"
-                      VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.ScrollUnit="Item" EnableRowVirtualization="False">
+                      VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.ScrollUnit="Item" EnableRowVirtualization="False"
+                      CanUserSortColumns="False">
 
                 <DataGrid.Resources>
                     <Style TargetType="{x:Type DataGridColumnHeader}">
@@ -108,6 +109,7 @@
                             <StackPanel Margin="20,0,20,0" Orientation="Horizontal" Background="Transparent">
                                 <Button Content="Zoom-" HorizontalContentAlignment="Center" Width="40" Click="zoomButton_Click" Loaded="zoomButtonLoaded"/>
                                 <Button Content="REAL" HorizontalContentAlignment="Center" Width="40" Click="realButton_Click" Loaded="realButtonLoaded"/>
+                                <Button Content="Dışarı Aktar" HorizontalContentAlignment="Center" Width="80" Click="exportChartButtonClick" Loaded="exportChartButtonLoaded"/>
                             </StackPanel>
                             <lvc:CartesianChart Margin="20,0,20,10" x:Name="realTimeChart" Background="Transparent" Zoom="None" Loaded="LoadFreqChart" ScrollMode="None" Pan="X"
                                                 DisableAnimations ="True" Hoverable="False" AllowDrop="False" DataTooltip="{x:Null}" Focusable="True" MouseWheel="ChartZoomEvent"
@@ -133,6 +135,9 @@
                 <DataGrid.RowDetailsVisibilityMode>Collapsed</DataGrid.RowDetailsVisibilityMode>
 
             </DataGrid>
+            <ProgressBar x:Name="progressBar" Visibility="Collapsed" Height="20" Width ="150" Margin="0,0,0,10" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
+            <Label x:Name="exportLabel" Content="Tablo Dışarı Aktarıldı." Margin="0,0,0,3" HorizontalAlignment="Right" Width="130" Height="26"  
+                   VerticalAlignment="Bottom" FontWeight="Bold" Foreground="White" Visibility="Collapsed"/>
 
         </Grid>
 
