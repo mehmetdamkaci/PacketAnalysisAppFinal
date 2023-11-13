@@ -96,16 +96,12 @@
                 <DataGrid.RowDetailsTemplate >
                     <DataTemplate >
                         <StackPanel>
-                            <Label Content="{Binding Key, Converter={StaticResource KeyValueConverter}}" HorizontalContentAlignment="Center" FontWeight="Bold" Foreground="White" Background="Transparent" Margin="20,5,20,0">
-                                <!--<Label.Content>
-                                    <MultiBinding Converter="{StaticResource KeyValueConverter}">
-                                        <Binding Path="Key" />
-                                        -->
-                                <!--<Binding Source=" PAKETİ FREKANS GRAFİĞİ" />-->
-                                <!--
-                                    </MultiBinding>
-                                </Label.Content>-->
-                            </Label>
+                            <StackPanel Loaded="LoadedChartExportPanel">
+                                <Label Content="{Binding Key, Converter={StaticResource KeyValueConverter}}" HorizontalContentAlignment="Center" FontWeight="Bold" Foreground="White" Background="Transparent" Margin="20,5,20,0">
+                                </Label>
+                                <ProgressBar Visibility="Visible" Width="150" Minimum="0"/>
+                                <Label Visibility="Visible" Content="Grafik Dışarı Aktarıldı." HorizontalAlignment="Center" Foreground="White" FontWeight="Bold" Background="Transparent"/>
+                            </StackPanel>
                             <StackPanel Margin="20,0,20,0" Orientation="Horizontal" Background="Transparent">
                                 <Button Content="Zoom-" HorizontalContentAlignment="Center" Width="40" Click="zoomButton_Click" Loaded="zoomButtonLoaded"/>
                                 <Button Content="REAL" HorizontalContentAlignment="Center" Width="40" Click="realButton_Click" Loaded="realButtonLoaded"/>
