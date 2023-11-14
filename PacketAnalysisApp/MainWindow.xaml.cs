@@ -895,9 +895,6 @@ namespace PacketAnalysisApp
 
                 }));
             });
-
-
-
         }
 
         // -------------------- Ayarlar Buton Fonksiyonu --------------------
