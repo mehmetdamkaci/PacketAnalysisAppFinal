@@ -132,7 +132,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="KeyValueConverter.cs" />
+    <Compile Include="KeyValueConverterDim.cs" />
+    <Compile Include="KeyValueConverterFreq.cs" />
     <Compile Include="StringArrayComparer.cs" />
     <Page Include="EnumMatchWindow.xaml">
       <SubType>Designer</SubType>

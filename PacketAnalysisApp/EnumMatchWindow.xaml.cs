@@ -1,9 +1,12 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using LiveCharts.Wpf;
+using LiveCharts;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -27,6 +30,12 @@ namespace PacketAnalysisApp
 
     public partial class EnumMatchWindow : Window
     {
+        DataGrid matchGrid;
+        Label logLabel;
+
+        public Dictionary<string[], int> expectedFreq = new Dictionary<string[], int>(new StringArrayComparer());
+        Dictionary<string[], TextBox> expectedTextBoxList = new Dictionary<string[], TextBox>();
+
         public Dictionary<string, Dictionary<int, string>> enumStruct = new Dictionary<string, Dictionary<int, string>>();
         public Dictionary<string, Dictionary<int, string>> enumStructMain = new Dictionary<string, Dictionary<int, string>>();
 
@@ -778,7 +787,7 @@ namespace PacketAnalysisApp
             kaydetStack.HorizontalAlignment = HorizontalAlignment.Center;
             kaydetStack.Margin = new Thickness(50, 0, 50, 0);
 
-            Label logLabel = new Label();
+            logLabel = new Label();
             logLabel.Content = "ENUM EŞLEŞMELERİ";
             logLabel.Foreground = Brushes.White;
             logLabel.Background = backgroundBrush;
@@ -803,7 +812,7 @@ namespace PacketAnalysisApp
 
             //------------------ Data Grid ----------------
 
-            DataGrid matchGrid = new DataGrid();
+            matchGrid = new DataGrid();
             matchGrid.HorizontalAlignment = HorizontalAlignment.Center;
             matchGrid.VerticalAlignment = VerticalAlignment.Center;
             matchGrid.AutoGenerateColumns = false;
@@ -940,14 +949,28 @@ namespace PacketAnalysisApp
 
         private void OkKaydetLog_Click(object sender, RoutedEventArgs e)
         {
-            //MessageBox.Show(newPath + " Dosyası Kaydedildi.");
+            expectedFreq = new Dictionary<string[], int>(new StringArrayComparer());
+            expectedTextBoxList = new Dictionary<string[], TextBox>();
 
-            foreach (Button btn in buttons)
+            for (int i = 0; i < enumStruct[paketName].Count; i++)
             {
-                btn.Visibility = Visibility.Visible;
+                for (int j = 0; j < enumStruct[enumStruct[paketName].Values.ElementAt(i)].Values.Count; j++)
+                {
+                    string[] paket_proje = { enumStruct[paketName].Values.ElementAt(i),
+                                                            enumStruct[enumStruct[paketName].Values.ElementAt(i)].Values.ElementAt(j)};
+                    expectedFreq.Add(paket_proje, 0);
+                }
             }
 
-            kaydetStack.Visibility = Visibility.Collapsed;
+            //MessageBox.Show(newPath + " Dosyası Kaydedildi.");
+
+            Button okKaydet = sender as Button;
+            //foreach (Button btn in buttons)
+            //{
+            //    btn.Visibility = Visibility.Visible;
+            //}
+
+            //kaydetStack.Visibility = Visibility.Collapsed;
 
             //MessageBox.Show(Environment.CurrentDirectory);
 
@@ -959,9 +982,71 @@ namespace PacketAnalysisApp
             enumStructMain = enumStruct;
 
             UpdatedList?.Invoke(enumStruct);
-            this.Close();
 
-            //kaydetWindow.Close();
+            matchGrid.Visibility = Visibility.Collapsed;
+            okKaydet.Visibility = Visibility.Collapsed;
+            kaydetAnaSayfaButon.Visibility = Visibility.Collapsed;
+            messageLabel.Visibility = Visibility.Collapsed;
+            logLabel.Content = "Paketlerin Beklenen Frekans Değerlerini Giriniz";
+
+            StackPanel expectedMainStack = new StackPanel();
+            expectedMainStack.HorizontalAlignment = HorizontalAlignment.Center;
+            expectedMainStack.Orientation = Orientation.Vertical;
+            StackPanel expectedChildStack = new StackPanel();
+
+            string packetName = expectedFreq.ElementAt(0).Key[0];
+            for (int i = 0; i < expectedFreq.Count; i++)
+            {
+                string name = expectedFreq.ElementAt(i).Key[0] + "." + expectedFreq.ElementAt(i).Key[1];
+
+                expectedChildStack = new StackPanel();
+                expectedChildStack.HorizontalAlignment = HorizontalAlignment.Left;
+                expectedChildStack.Orientation = Orientation.Horizontal;
+
+                Label expectedLabel = new Label();
+                expectedLabel.Content = name;
+                expectedLabel.Foreground = Brushes.White;
+                //expectedLabel.FontWeight = FontWeights.Bold;
+                
+                TextBox expectedTextBox = new TextBox();
+                expectedTextBox.Text = 0.ToString();
+                expectedTextBox.Width = 30;
+                expectedTextBox.Height = 20;
+                expectedTextBox.Background = Brushes.LightGray;
+                expectedTextBox.FontWeight = FontWeights.Bold;
+                expectedTextBox.Name = name.Replace(".", "_");
+                expectedTextBoxList.Add(expectedFreq.ElementAt(i).Key, expectedTextBox);
+                if (packetName != expectedFreq.ElementAt(i).Key[0])
+                {
+                    expectedChildStack.Margin = new Thickness(0,20,0,0);
+                }
+                expectedChildStack.Children.Add(expectedLabel);
+                expectedChildStack.Children.Add(expectedTextBox);
+
+                expectedMainStack.Children.Add(expectedChildStack);
+                packetName = expectedFreq.ElementAt(i).Key[0];
+            }
+
+            expectedChildStack.Margin = new Thickness(0, 0, 0, 20);
+            Button expectedButton = new Button();
+            expectedButton.Click += ExpectedButtonClicked;
+            expectedButton.Content = "Kaydet";
+            expectedButton.FontWeight = FontWeights.Bold;
+            expectedButton.Width = 80;
+            expectedButton.Margin = new Thickness(0, 0, 0, 20);
+            expectedMainStack.Children.Add(expectedButton);
+            kaydetStack.Children.Add(expectedMainStack);
+            //this.Close();
+
+        }
+
+        private void ExpectedButtonClicked(object sender, RoutedEventArgs e)
+        {
+            for(int i = 0; i < expectedFreq.Count; i++)
+            {
+                expectedFreq[expectedFreq.ElementAt(i).Key] = Convert.ToInt32(expectedTextBoxList[expectedFreq.ElementAt(i).Key].Text);
+            }
+            this.Close();
         }
 
         private void kaydetWindowClosed(object sender, EventArgs e)

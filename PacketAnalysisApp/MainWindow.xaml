@@ -4,12 +4,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PacketAnalysisApp"
-        xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+        xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf" 
         WindowStartupLocation="CenterScreen" Width="1080" Height="720"
         AllowsTransparency="False" Background="#333333" Closed="MainAppClosed">
 
     <Window.Resources>
-        <local:KeyValueConverter x:Key="KeyValueConverter" />
+        <local:KeyValueConverterFreq x:Key="KeyValueConverterFreq" />
+        <local:KeyValueConverterDim x:Key="KeyValueConverterDim"/>
     </Window.Resources>
 
     <Grid  x:Name="mainGrid" Margin="54,36,41,10">
@@ -81,6 +82,9 @@
                     <DataGridTextColumn x:Name="projeColumn" Header="PROJE"  Width="*" HeaderStyle="{StaticResource DataGridColumnHeaderCenter}" />
                     <DataGridTextColumn x:Name="toplamColumn" Header="TOPLAM"  Width="*" HeaderStyle="{StaticResource DataGridColumnHeaderCenter}" />
                     <DataGridTextColumn x:Name="frekansColumn" Header="FREKANS"  Width="*" HeaderStyle="{StaticResource DataGridColumnHeaderCenter}" />
+                    <DataGridTextColumn x:Name="boyutColumn" Header="BOYUT"  Width="*" HeaderStyle="{StaticResource DataGridColumnHeaderCenter}" />
+                    <DataGridTextColumn x:Name="toplamBoyutColumn" Header="TOPLAM BOYUT"  Width="1.25*" HeaderStyle="{StaticResource DataGridColumnHeaderCenter}" />
+
                     <!--<DataGridTextColumn Header="DETAY" Binding="{Binding Path=projeID}" Width="*" HeaderStyle="{StaticResource DataGridColumnHeaderCenter}" />-->
                     <DataGridTemplateColumn Header="DETAY"  Width="*" HeaderStyle="{StaticResource DataGridColumnHeaderCenter}" Selector.IsSelected="False">
                         <DataGridTemplateColumn.CellTemplate>
@@ -95,37 +99,69 @@
 
                 <DataGrid.RowDetailsTemplate >
                     <DataTemplate >
-                        <StackPanel>
-                            <StackPanel Loaded="LoadedChartExportPanel">
-                                <Label Content="{Binding Key, Converter={StaticResource KeyValueConverter}}" HorizontalContentAlignment="Center" FontWeight="Bold" Foreground="White" Background="Transparent" Margin="20,5,20,0">
-                                </Label>
-                                <ProgressBar Visibility="Visible" Width="150" Minimum="0"/>
-                                <Label Visibility="Visible" Content="Grafik Dışarı Aktarıldı." HorizontalAlignment="Center" Foreground="White" FontWeight="Bold" Background="Transparent"/>
-                            </StackPanel>
-                            <StackPanel Margin="20,0,20,0" Orientation="Horizontal" Background="Transparent">
-                                <Button Content="Zoom-" HorizontalContentAlignment="Center" Width="40" Click="zoomButton_Click" Loaded="zoomButtonLoaded"/>
-                                <Button Content="REAL" HorizontalContentAlignment="Center" Width="40" Click="realButton_Click" Loaded="realButtonLoaded"/>
-                                <Button Content="Dışarı Aktar" HorizontalContentAlignment="Center" Width="80" Click="exportChartButtonClick" Loaded="exportChartButtonLoaded"/>
-                            </StackPanel>
-                            <lvc:CartesianChart Margin="20,0,20,10" x:Name="realTimeChart" Background="Transparent" Zoom="None" Loaded="LoadFreqChart" ScrollMode="None" Pan="X"
-                                                DisableAnimations ="True" Hoverable="False" AllowDrop="False" DataTooltip="{x:Null}" Focusable="True" MouseWheel="ChartZoomEvent"
-                                                MouseLeftButtonDown="ChartPanEvent" MouseLeftButtonUp="ChartPanEvent">
-                                <lvc:CartesianChart.CacheMode>
-                                    <BitmapCache EnableClearType="False" 
-                                                RenderAtScale="1"
-                                                SnapsToDevicePixels="False" />
-                                </lvc:CartesianChart.CacheMode>
-                                <lvc:CartesianChart.AxisX>
-                                    <lvc:Axis Name="XAxis" Title="Zaman" Labels="{Binding chartXLabels}" LabelsRotation="30" FontSize="16" Foreground="White" DisableAnimations ="True"/>
-                                </lvc:CartesianChart.AxisX>
-                                <lvc:CartesianChart.AxisY>
-                                    <lvc:Axis Name="YAxis" Title="Paket Sayısı" FontSize="16" Foreground="White" DisableAnimations ="True"/>
-                                </lvc:CartesianChart.AxisY>
-                            </lvc:CartesianChart>
-
-                        </StackPanel>
-                        <!--<TextBlock x:Name="textBox" Loaded="LoadTextBlock" Text="aaaaaa" Margin="10,5,0,0" FontFamily="Courier, monospace" FontSize="13"  FontWeight="SemiBold" Foreground="Black"/>-->
-
+                        <TabControl Background="Transparent">
+                            <TabItem Header="Frekans Analizi">
+                                <StackPanel>
+                                    <StackPanel Loaded="LoadedChartExportPanel">
+                                        <Label Content="{Binding Key, Converter={StaticResource KeyValueConverterFreq}}" HorizontalContentAlignment="Center" FontWeight="Bold" Foreground="White" Background="Transparent" Margin="20,5,20,0">
+                                        </Label>
+                                        <ProgressBar Visibility="Visible" Width="150" Minimum="0"/>
+                                        <Label Visibility="Visible" Content="Grafik Dışarı Aktarıldı." HorizontalAlignment="Center" Foreground="White" FontWeight="Bold" Background="Transparent"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="20,0,20,0" Orientation="Horizontal" Background="Transparent">
+                                        <Button Content="Zoom-" HorizontalContentAlignment="Center" Width="40" Click="zoomButton_Click" Loaded="zoomButtonLoaded"/>
+                                        <Button Content="REAL" HorizontalContentAlignment="Center" Width="40" Click="realButton_Click" Loaded="realButtonLoaded"/>
+                                        <Button Content="Dışarı Aktar" HorizontalContentAlignment="Center" Width="80" Click="exportChartButtonClick" Loaded="exportChartButtonLoaded"/>
+                                    </StackPanel>
+                                    <lvc:CartesianChart Margin="20,0,20,10" x:Name="realTimeChart" Background="Transparent" Zoom="None" Loaded="LoadFreqChart" ScrollMode="None" Pan="X"
+                                                        DisableAnimations ="True" Hoverable="False" AllowDrop="False" DataTooltip="{x:Null}" Focusable="True" MouseWheel="ChartZoomEvent"
+                                                        MouseLeftButtonDown="ChartPanEvent" MouseLeftButtonUp="ChartPanEvent">
+                                        <lvc:CartesianChart.CacheMode>
+                                            <BitmapCache EnableClearType="False" 
+                                                        RenderAtScale="1"
+                                                        SnapsToDevicePixels="False" />
+                                        </lvc:CartesianChart.CacheMode>
+                                        <lvc:CartesianChart.AxisX>
+                                            <lvc:Axis Name="XAxis" Title="Zaman" Labels="{Binding chartXLabels}" LabelsRotation="30" FontSize="16" Foreground="White" DisableAnimations ="True"/>
+                                        </lvc:CartesianChart.AxisX>
+                                        <lvc:CartesianChart.AxisY>
+                                            <lvc:Axis Name="YAxis" Title="Paket Sayısı" FontSize="16" Foreground="White" DisableAnimations ="True"/>
+                                        </lvc:CartesianChart.AxisY>
+                                    </lvc:CartesianChart>
+                                </StackPanel>
+                                <!--<TextBlock x:Name="textBox" Loaded="LoadTextBlock" Text="aaaaaa" Margin="10,5,0,0" FontFamily="Courier, monospace" FontSize="13"  FontWeight="SemiBold" Foreground="Black"/>-->
+                            </TabItem>
+                            <TabItem Header="Boyut Analizi">
+                                <StackPanel>
+                                    <StackPanel Loaded="LoadedChartExportPanel">
+                                        <Label Content="{Binding Key, Converter={StaticResource KeyValueConverterDim}}" HorizontalContentAlignment="Center" FontWeight="Bold" Foreground="White" Background="Transparent" Margin="20,5,20,0">
+                                        </Label>
+                                        <ProgressBar Visibility="Visible" Width="150" Minimum="0"/>
+                                        <Label Visibility="Visible" Content="Grafik Dışarı Aktarıldı." HorizontalAlignment="Center" Foreground="White" FontWeight="Bold" Background="Transparent"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="20,0,20,0" Orientation="Horizontal" Background="Transparent">
+                                        <Button Content="Zoom-" HorizontalContentAlignment="Center" Width="40" Click="dimZoomButton_Click" Loaded="zoomButtonLoaded"/>
+                                        <Button Content="REAL" HorizontalContentAlignment="Center" Width="40" Click="dimRealButton_Click" Loaded="realButtonLoaded"/>
+                                        <Button Content="Dışarı Aktar" HorizontalContentAlignment="Center" Width="80" Click="dimExportChartButtonClick" Loaded="exportChartButtonLoaded"/>
+                                    </StackPanel>
+                                    <lvc:CartesianChart Margin="20,0,20,10" Background="Transparent" Zoom="None" Loaded="LoadDimChart" ScrollMode="None" Pan="X"
+                                                        DisableAnimations ="True" Hoverable="False" AllowDrop="False" DataTooltip="{x:Null}" Focusable="True" MouseWheel="ChartZoomEvent"
+                                                        MouseLeftButtonDown="ChartPanEvent" MouseLeftButtonUp="ChartPanEvent">
+                                        <lvc:CartesianChart.CacheMode>
+                                            <BitmapCache EnableClearType="False" 
+                                                        RenderAtScale="1"
+                                                        SnapsToDevicePixels="False" />
+                                        </lvc:CartesianChart.CacheMode>
+                                        <lvc:CartesianChart.AxisX>
+                                            <lvc:Axis Title="Zaman" Labels="{Binding chartXLabels}" LabelsRotation="30" FontSize="16" Foreground="White" DisableAnimations ="True"/>
+                                        </lvc:CartesianChart.AxisX>
+                                        <lvc:CartesianChart.AxisY>
+                                            <lvc:Axis Title="Boyut (B)" FontSize="16" Foreground="White" DisableAnimations ="True"/>
+                                        </lvc:CartesianChart.AxisY>
+                                    </lvc:CartesianChart>
+                                </StackPanel>
+                            </TabItem>
+                        </TabControl>
                     </DataTemplate>
                 </DataGrid.RowDetailsTemplate>
                 <DataGrid.RowDetailsVisibilityMode>Collapsed</DataGrid.RowDetailsVisibilityMode>
