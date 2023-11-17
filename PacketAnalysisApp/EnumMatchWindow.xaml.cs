@@ -1137,7 +1137,7 @@ namespace PacketAnalysisApp
                 }
                 expectedChildStack.Children.Add(expectedLabel);
                 expectedChildStack.Children.Add(expectedTextBox);
-
+                
                 expectedMainStack.Children.Add(expectedChildStack);
                 packetName = expectedFreq.ElementAt(i).Key[0];
             }
