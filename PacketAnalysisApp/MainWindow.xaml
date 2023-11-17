@@ -53,11 +53,9 @@
                     <Setter Property="Height" Value="20"/>
                 </Style>
             </Grid.Resources>
-
-
             <DataGrid Name="dataGrid" AutoGenerateColumns="False" Background="#FF696969" AlternatingRowBackground="LightGray" AlternationCount="2"
                       ItemsSource="{Binding Path=Packets}" SelectedItem="{Binding Path=paketID}" IsReadOnly="True" BorderThickness="0" 
-                      CellStyle="{StaticResource Body_Content_DataGrid_Centering}" Margin="32,-32,0,34" SelectionUnit="FullRow"
+                      CellStyle="{StaticResource Body_Content_DataGrid_Centering}" Margin="32,-32,-32,34" SelectionUnit="FullRow"
                       VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.ScrollUnit="Item" EnableRowVirtualization="False"
                       CanUserSortColumns="False">
 
@@ -112,28 +110,40 @@
                                         <Button Content="Zoom-" HorizontalContentAlignment="Center" Width="40" Click="zoomButton_Click" Loaded="zoomButtonLoaded"/>
                                         <Button Content="REAL" HorizontalContentAlignment="Center" Width="40" Click="realButton_Click" Loaded="realButtonLoaded"/>
                                         <Button Content="Dışarı Aktar" HorizontalContentAlignment="Center" Width="80" Click="exportChartButtonClick" Loaded="exportChartButtonLoaded"/>
-                                    </StackPanel>
-                                    <lvc:CartesianChart Margin="20,0,20,10" x:Name="realTimeChart" Background="Transparent" Zoom="None" Loaded="LoadFreqChart" ScrollMode="None" Pan="X"
+                                    </StackPanel >
+                                    <StackPanel Orientation="Vertical">
+                                        <lvc:CartesianChart Margin="20,0,20,10" x:Name="realTimeChart" Background="Transparent" Zoom="None" Loaded="LoadFreqChart" ScrollMode="None" Pan="X"
                                                         DisableAnimations ="True" Hoverable="False" AllowDrop="False" DataTooltip="{x:Null}" Focusable="True" MouseWheel="ChartZoomEvent"
                                                         MouseLeftButtonDown="ChartPanEvent" MouseLeftButtonUp="ChartPanEvent">
-                                        <lvc:CartesianChart.CacheMode>
-                                            <BitmapCache EnableClearType="False" 
+                                            <lvc:CartesianChart.CacheMode>
+                                                <BitmapCache EnableClearType="False" 
                                                         RenderAtScale="1"
                                                         SnapsToDevicePixels="False" />
-                                        </lvc:CartesianChart.CacheMode>
-                                        <lvc:CartesianChart.AxisX>
-                                            <lvc:Axis Name="XAxis" Title="Zaman" Labels="{Binding chartXLabels}" LabelsRotation="30" FontSize="16" Foreground="White" DisableAnimations ="True"/>
-                                        </lvc:CartesianChart.AxisX>
-                                        <lvc:CartesianChart.AxisY>
-                                            <lvc:Axis Name="YAxis" Title="Paket Sayısı" FontSize="16" Foreground="White" DisableAnimations ="True"/>
-                                        </lvc:CartesianChart.AxisY>
-                                    </lvc:CartesianChart>
+                                            </lvc:CartesianChart.CacheMode>
+                                            <lvc:CartesianChart.AxisX>
+                                                <lvc:Axis Name="XAxis" Title="Zaman" Labels="{Binding chartXLabels}" LabelsRotation="30" FontSize="16" Foreground="White" DisableAnimations ="True"/>
+                                            </lvc:CartesianChart.AxisX>
+                                            <lvc:CartesianChart.AxisY>
+                                                <lvc:Axis Name="YAxis" Title="Paket Sayısı" FontSize="16" Foreground="White" DisableAnimations ="True"/>
+                                            </lvc:CartesianChart.AxisY>
+                                        </lvc:CartesianChart>
+                                        <StackPanel Loaded="FreqLabelStackLoaded" HorizontalAlignment="Center" Orientation="Horizontal">
+                                            <StackPanel >
+                                                <Label  HorizontalContentAlignment="Center" Width="500" FontWeight="Bold" Foreground="Black" Background="Transparent" FontSize="14"/>
+                                                <Label  HorizontalContentAlignment="Center" Width="500" FontWeight="Bold" Foreground="Black" Background="Transparent" FontSize="14"/>
+                                            </StackPanel>
+                                            <StackPanel Margin="50,0,0,0">
+                                                <Label  HorizontalContentAlignment="Center" Width="500" FontWeight="Bold" Foreground="Black" Background="Transparent" FontSize="14"/>
+                                                <Label HorizontalContentAlignment="Center" Width="500" FontWeight="Bold" Foreground="Black" Background="Transparent" Margin="0,0,0,20" FontSize="14"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </StackPanel>
                                 </StackPanel>
                                 <!--<TextBlock x:Name="textBox" Loaded="LoadTextBlock" Text="aaaaaa" Margin="10,5,0,0" FontFamily="Courier, monospace" FontSize="13"  FontWeight="SemiBold" Foreground="Black"/>-->
                             </TabItem>
                             <TabItem Header="Boyut Analizi">
                                 <StackPanel>
-                                    <StackPanel Loaded="LoadedChartExportPanel">
+                                    <StackPanel Loaded="LoadedDimChartExportPanel">
                                         <Label Content="{Binding Key, Converter={StaticResource KeyValueConverterDim}}" HorizontalContentAlignment="Center" FontWeight="Bold" Foreground="White" Background="Transparent" Margin="20,5,20,0">
                                         </Label>
                                         <ProgressBar Visibility="Visible" Width="150" Minimum="0"/>
@@ -173,7 +183,7 @@
 
         </Grid>
 
-        <Border CornerRadius="5" BorderBrush="Black" BorderThickness="1" Background="LightGray" Height="25" VerticalAlignment="Top" Margin="0,-22,40,0" HorizontalAlignment="Right" Width="200" Grid.Column="1">
+        <Border CornerRadius="5" BorderBrush="Black" BorderThickness="1" Background="LightGray" Height="25" VerticalAlignment="Top" Margin="0,-19,9,0" HorizontalAlignment="Right" Width="200" Grid.Column="1">
             <StackPanel Margin="0,0,10,0" Height="50" VerticalAlignment="Top" HorizontalAlignment="Right" Width="214">
                 <TextBox x:Name="searchBox" Text="Ara" TextWrapping="Wrap" Background="LightGray" BorderThickness="0"
                                  FontWeight="Bold" VerticalContentAlignment="Center"
@@ -186,44 +196,45 @@
                     BorderThickness="0" VerticalAlignment="Center" Click="AyarlarClicked"/>
         </Border>
 
-        <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Column="2" Margin="0,0,0,71">
-            <StackPanel x:Name="buttonPiePanel"  Orientation="Vertical">
-                <lvc:PieChart x:Name="pieChart" Foreground="AliceBlue"
-                        InnerRadius="0" LegendLocation="Bottom" Hoverable="False" Series="{Binding SeriesCollection}" 
-                        Height="314" DisableAnimations="True" Margin="0,0,0,80" DataClick="PieChartClick" >
-                    <lvc:PieChart.CacheMode>
-                        <BitmapCache EnableClearType="False" 
-                                                RenderAtScale="1"
-                                                SnapsToDevicePixels="False" />
-                    </lvc:PieChart.CacheMode>
-                </lvc:PieChart>
-                <Label x:Name="paketProjeDist" Margin="0,0,0,10" Content="PAKET - PROJE DAĞILIMLARI" HorizontalContentAlignment="Center"
-                       Foreground="White" FontSize="16" FontWeight="Bold" Visibility="Collapsed"/>
 
-                <Border x:Name="borderSocketPanel" CornerRadius="20" BorderBrush="Black" BorderThickness="1" Background="Gray"  VerticalAlignment="Top" Margin="0,0,40,0" 
-                        HorizontalAlignment="Center"  Grid.Column="1">
-                    <StackPanel x:Name="socketPanel" Orientation="Vertical" HorizontalAlignment="Center" Background="Transparent">
-                        <StackPanel Margin="0,20,0,0" Orientation="Horizontal">
-                            <Label Margin="26,0,0,0"  Content="IP" Foreground="White" FontSize="16" FontWeight="Bold"/>
-                            <TextBox x:Name="ipBox" Text="127.0.0.1" Width="200" Height="25" VerticalContentAlignment="Center" FontWeight="Bold" Background="LightGray" Margin="0,0,20,0"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <Label Content="PORT" Foreground="White" FontSize="16" FontWeight="Bold"/>
-                            <TextBox x:Name="portBox" Text="12345" Width="200" Height="25" VerticalContentAlignment="Center" FontWeight="Bold" Background="LightGray"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <Button x:Name="disconnectButton" Content="Bağlantıyı Kes" Width="100" Margin="20, 20, 0,20" FontWeight="Bold" Click="DisconnectButtonClicked"/>
-                            <Button x:Name="connectButton" Content="Bağlan" Width="100" Margin="30, 20, 0,20" FontWeight="Bold" Click="ConnectButtonClicked"/>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
+
+        <StackPanel Grid.Column="2" Orientation="Vertical">
+            <lvc:PieChart x:Name="pieChart" Foreground="AliceBlue"
+                        InnerRadius="45" LegendLocation="None" Hoverable="False" Series="{Binding SeriesCollection}" 
+                        Height="314" DisableAnimations="True" Margin="0,0,0,80" DataClick="PieChartClick" Width="323" >
+                <lvc:PieChart.CacheMode>
+                    <BitmapCache EnableClearType="False" 
+                                 RenderAtScale="1"
+                                 SnapsToDevicePixels="False" />
+                </lvc:PieChart.CacheMode>
+            </lvc:PieChart>
+        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Column="2" Margin="0,329,0,212">
+            <StackPanel x:Name="buttonPiePanel" VerticalAlignment="Center">
 
             </StackPanel>
         </ScrollViewer>
 
-        <Button x:Name="socketPanelButton" Grid.Column="2" Content="Soket Panel" Margin="0,0,0,10" Height="20" 
-                Click="SocketPanelButtonClicked" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="100"  Background="LightGray" FontWeight="Bold"/>
-        <Button x:Name="exportButton" Grid.Column="1" Content="Dışarı Aktar" Margin="0,0,40,5" Click="exportClick" Height="25" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="81"
+        <StackPanel Grid.Column="2" Height="658" VerticalAlignment="Bottom">
+            <Border x:Name="borderSocketPanel" CornerRadius="20" BorderBrush="Black" BorderThickness="1" Background="Gray"  VerticalAlignment="Top" Margin="0,480,0,0" 
+                        HorizontalAlignment="Center"  Grid.Column="2">
+                <StackPanel x:Name="socketPanel" Orientation="Vertical" HorizontalAlignment="Center" Background="Transparent">
+                    <StackPanel Margin="0,20,0,0" Orientation="Horizontal">
+                        <Label Margin="26,0,0,0"  Content="IP" Foreground="White" FontSize="16" FontWeight="Bold"/>
+                        <TextBox x:Name="ipBox" Text="127.0.0.1" Width="200" Height="25" VerticalContentAlignment="Center" FontWeight="Bold" Background="LightGray" Margin="0,0,20,0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Label Content="PORT" Foreground="White" FontSize="16" FontWeight="Bold"/>
+                        <TextBox x:Name="portBox" Text="12345" Width="200" Height="25" VerticalContentAlignment="Center" FontWeight="Bold" Background="LightGray"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="disconnectButton" Content="Bağlantıyı Kes" Width="100" Margin="20, 20, 0,20" FontWeight="Bold" Click="DisconnectButtonClicked"/>
+                        <Button x:Name="connectButton" Content="Bağlan" Width="100" Margin="30, 20, 0,20" FontWeight="Bold" Click="ConnectButtonClicked"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+        <Button x:Name="exportButton" Grid.Column="1" Content="Dışarı Aktar" Margin="0,0,9,0" Click="exportClick" Height="25" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="81"
                 Background="LightGray" FontWeight="Bold"/>
 
 

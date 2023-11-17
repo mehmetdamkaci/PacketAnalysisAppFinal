@@ -26,15 +26,18 @@ namespace PacketAnalysisApp
     {
         public string Name { get; set; }
         public string Path { get; set; }
+        public Dictionary<string, int> Freq { get; set; }
     }
 
     public partial class EnumMatchWindow : Window
     {
+        StackPanel expectedChildStack;
+        StackPanel expectedMainStack;
         DataGrid matchGrid;
         Label logLabel;
-
+        public Button expectedButton = new Button();
         public Dictionary<string[], int> expectedFreq = new Dictionary<string[], int>(new StringArrayComparer());
-        Dictionary<string[], TextBox> expectedTextBoxList = new Dictionary<string[], TextBox>();
+        Dictionary<string[], TextBox> expectedTextBoxList = new Dictionary<string[], TextBox>(new StringArrayComparer());
 
         public Dictionary<string, Dictionary<int, string>> enumStruct = new Dictionary<string, Dictionary<int, string>>();
         public Dictionary<string, Dictionary<int, string>> enumStructMain = new Dictionary<string, Dictionary<int, string>>();
@@ -100,7 +103,13 @@ namespace PacketAnalysisApp
 
             InitializeComponent();
             FileNameTextBox.Text = paketPath;
-            viewEnums();
+            csText = File.ReadAllText(paketPath);
+            enums = ProcessEnumCode(csText);
+
+
+
+            //viewEnums();
+
             enumStructMain = enumStruct;
         }
 
@@ -681,6 +690,8 @@ namespace PacketAnalysisApp
 
         public Dictionary<string, List<string>> ProcessEnumCode(string enumCode)
         {
+
+
             if (enumStruct != null) enumStruct.Clear();
             enumStruct = new Dictionary<string, Dictionary<int, string>>();
             Dictionary<string, List<string>> enums = new Dictionary<string, List<string>>();
@@ -729,6 +740,23 @@ namespace PacketAnalysisApp
                         enums.Add(type.Name, enumValue);
                     }
                 }
+                expectedFreq.Clear();
+                for (int i = 0; i < configData.Freq.Count; i++)
+                {
+                    string freqName = configData.Freq.ElementAt(i).Key;
+                    int freqValue = configData.Freq.ElementAt(i).Value;
+
+                    expectedFreq.Add(freqName.Split('.'), freqValue);
+                }
+                //for (int i = 0; i < enumStruct[paketName].Count; i++)
+                //{
+                //    for (int j = 0; j < enumStruct[enumStruct[paketName].Values.ElementAt(i)].Values.Count; j++)
+                //    {
+                //        string[] paket_proje = { enumStruct[paketName].Values.ElementAt(i),
+                //                                            enumStruct[enumStruct[paketName].Values.ElementAt(i)].Values.ElementAt(j)};
+                //        expectedFreq.Add(paket_proje, 0);
+                //    }
+                //}
 
                 return enums;
             }
@@ -759,7 +787,92 @@ namespace PacketAnalysisApp
                 MessageBox.Show("Soket Panelden Bağlanıyı Kesiniz.");
                 return;
             }
+            enumlarButton.Visibility = Visibility.Collapsed;
+            beklenenFrekansButton.Visibility = Visibility.Collapsed;
+            messageLabel.Content = "Paketlerin Bulunduğu Enum'ı Seçiniz.";
             viewEnums(FileNameTextBox.Text);
+        }
+
+        private void BeklenenFrekClicked(object sender, RoutedEventArgs e)
+        {
+            enumlarButton.Visibility = Visibility.Collapsed;
+            beklenenFrekansButton.Visibility= Visibility.Collapsed;
+            //expectedFreq.Clear();
+            expectedTextBoxList = new Dictionary<string[], TextBox>(new StringArrayComparer());
+            messageLabel.Visibility = Visibility.Visible;
+            messageLabel.Content = "***Paketlerin Beklenen Frekans Değerlerini Giriniz***";
+            expectedMainStack = new StackPanel();
+            expectedMainStack.HorizontalAlignment = HorizontalAlignment.Center;
+            expectedMainStack.Orientation = Orientation.Vertical;
+            
+            if (expectedChildStack!=null) expectedChildStack.Children.Clear();
+
+            string packetName = expectedFreq.ElementAt(0).Key[0];
+            for (int i = 0; i < expectedFreq.Count; i++)
+            {
+                string name = expectedFreq.ElementAt(i).Key[0] + "." + expectedFreq.ElementAt(i).Key[1];
+
+                expectedChildStack = new StackPanel();
+                expectedChildStack.HorizontalAlignment = HorizontalAlignment.Left;
+                expectedChildStack.Orientation = Orientation.Horizontal;
+
+                Label expectedLabel = new Label();
+                expectedLabel.Background = Brushes.DimGray;
+                expectedLabel.Content = name;
+                expectedLabel.Foreground = Brushes.White;
+                expectedLabel.HorizontalAlignment = HorizontalAlignment.Stretch;
+                expectedLabel.Width = this.Width/2;
+
+                //expectedLabel.FontWeight = FontWeights.Bold;
+
+                TextBox expectedTextBox = new TextBox();
+                expectedTextBox.Text = expectedFreq.ElementAt(i).Value.ToString();
+                expectedTextBox.Width = 30;
+                expectedTextBox.Height = 25;
+                expectedTextBox.Background = Brushes.LightGray;
+                expectedTextBox.FontWeight = FontWeights.Bold;
+                expectedTextBox.Name = name.Replace(".", "_");
+                expectedTextBoxList.Add(expectedFreq.ElementAt(i).Key, expectedTextBox);
+                if (packetName != expectedFreq.ElementAt(i).Key[0])
+                {
+                    expectedChildStack.Margin = new Thickness(0, 20, 0, 0);
+                }
+                expectedChildStack.Children.Add(expectedLabel);
+                expectedChildStack.Children.Add(expectedTextBox);
+
+                expectedMainStack.Children.Add(expectedChildStack);
+                packetName = expectedFreq.ElementAt(i).Key[0];
+            }
+
+            expectedChildStack.Margin = new Thickness(0, 0, 0, 20);
+            expectedChildStack = new StackPanel();
+            expectedChildStack.Orientation = Orientation.Horizontal;
+            expectedButton.Click += ExpectedButtonClicked;
+            expectedButton.Content = "Kaydet";
+            expectedButton.FontWeight = FontWeights.Bold;
+            expectedButton.Width = 80;
+            expectedButton.Margin = new Thickness(0, 0, 0, 0);
+
+            Button expectedBackButton = new Button();
+            expectedBackButton.Click += ExpectedBackButtonClicked;
+            expectedBackButton.Content = "Geri";
+            expectedBackButton.FontWeight = FontWeights.Bold;
+            expectedBackButton.Width = 80;
+            expectedBackButton.Margin = new Thickness(0, 0, 175, 0);
+            expectedChildStack.Children.Add(expectedBackButton);
+            expectedChildStack.Children.Add(expectedButton);
+            expectedChildStack.Margin = new Thickness(0, 0, 0, 20);
+            expectedMainStack.Children.Add(expectedChildStack);
+            stackPanel.Children.Add(expectedMainStack);
+            //kaydetStack.Children.Add(expectedMainStack);
+        }
+
+        private void ExpectedBackButtonClicked(object sender, RoutedEventArgs e)
+        {
+            expectedMainStack.Visibility = Visibility.Collapsed;
+            messageLabel.Visibility = Visibility.Collapsed;
+            beklenenFrekansButton.Visibility = Visibility.Visible;
+            enumlarButton.Visibility = Visibility.Visible;
         }
 
         private void KaydetClick(object sender, RoutedEventArgs e)
@@ -922,6 +1035,7 @@ namespace PacketAnalysisApp
                 Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PacketAnalysis"));
             }
             newPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PacketAnalysis") + "\\Matched_" + path.Substring(path.LastIndexOf('\\') + 1);
+
             //newPath = path.Substring(0, path.LastIndexOf("\\")) + "\\" + "new" + path.Substring(path.LastIndexOf('\\') + 1);
             if (File.Exists(newPath))
             {
@@ -949,18 +1063,9 @@ namespace PacketAnalysisApp
 
         private void OkKaydetLog_Click(object sender, RoutedEventArgs e)
         {
-            expectedFreq = new Dictionary<string[], int>(new StringArrayComparer());
-            expectedTextBoxList = new Dictionary<string[], TextBox>();
 
-            for (int i = 0; i < enumStruct[paketName].Count; i++)
-            {
-                for (int j = 0; j < enumStruct[enumStruct[paketName].Values.ElementAt(i)].Values.Count; j++)
-                {
-                    string[] paket_proje = { enumStruct[paketName].Values.ElementAt(i),
-                                                            enumStruct[enumStruct[paketName].Values.ElementAt(i)].Values.ElementAt(j)};
-                    expectedFreq.Add(paket_proje, 0);
-                }
-            }
+            expectedTextBoxList = new Dictionary<string[], TextBox>(new StringArrayComparer());
+
 
             //MessageBox.Show(newPath + " Dosyası Kaydedildi.");
 
@@ -977,11 +1082,21 @@ namespace PacketAnalysisApp
             paketName = clickedButton.Content.ToString().Trim();
             configData.Name = paketName;
             configData.Path = newPath;
-            File.WriteAllText(jsonPath,JsonConvert.SerializeObject(configData, Formatting.Indented));
 
             enumStructMain = enumStruct;
-
             UpdatedList?.Invoke(enumStruct);
+
+
+            expectedFreq.Clear();
+            for (int i = 0; i < enumStruct[paketName].Count; i++)
+            {
+                for (int j = 0; j < enumStruct[enumStruct[paketName].Values.ElementAt(i)].Values.Count; j++)
+                {
+                    string[] paket_proje = { enumStruct[paketName].Values.ElementAt(i),
+                                                            enumStruct[enumStruct[paketName].Values.ElementAt(i)].Values.ElementAt(j)};
+                    expectedFreq.Add(paket_proje, 0);
+                }
+            }
 
             matchGrid.Visibility = Visibility.Collapsed;
             okKaydet.Visibility = Visibility.Collapsed;
@@ -1027,6 +1142,15 @@ namespace PacketAnalysisApp
                 packetName = expectedFreq.ElementAt(i).Key[0];
             }
 
+            Dictionary<string, int> tempFreq = new Dictionary<string, int>();
+            for (int i = 0; i < expectedFreq.Count; i++)
+            {
+                expectedFreq[expectedFreq.ElementAt(i).Key] = Convert.ToInt32(expectedTextBoxList[expectedFreq.ElementAt(i).Key].Text);
+                tempFreq.Add(expectedFreq.ElementAt(i).Key[0] + "." + expectedFreq.ElementAt(i).Key[1], expectedFreq.ElementAt(i).Value);
+            }
+            configData.Freq = tempFreq;
+            File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
+
             expectedChildStack.Margin = new Thickness(0, 0, 0, 20);
             Button expectedButton = new Button();
             expectedButton.Click += ExpectedButtonClicked;
@@ -1039,13 +1163,35 @@ namespace PacketAnalysisApp
             //this.Close();
 
         }
+        public delegate void ExpectedButtonClickedEventHandler(object sender, RoutedEventArgs e);
+
+        public event ExpectedButtonClickedEventHandler ExpectedButtonClickedEvent;
 
         private void ExpectedButtonClicked(object sender, RoutedEventArgs e)
         {
-            for(int i = 0; i < expectedFreq.Count; i++)
+            
+            expectedFreq.Clear();
+
+            for (int i = 0; i < enumStruct[paketName].Count; i++)
+            {
+                for (int j = 0; j < enumStruct[enumStruct[paketName].Values.ElementAt(i)].Values.Count; j++)
+                {
+                    string[] paket_proje = { enumStruct[paketName].Values.ElementAt(i),
+                                                            enumStruct[enumStruct[paketName].Values.ElementAt(i)].Values.ElementAt(j)};
+                    expectedFreq.Add(paket_proje, 0);
+                }
+            }
+            Dictionary<string, int> tempFreq = new Dictionary<string, int>();
+            
+            for (int i = 0; i < expectedFreq.Count; i++)
             {
                 expectedFreq[expectedFreq.ElementAt(i).Key] = Convert.ToInt32(expectedTextBoxList[expectedFreq.ElementAt(i).Key].Text);
+                tempFreq.Add(expectedFreq.ElementAt(i).Key[0] + "." + expectedFreq.ElementAt(i).Key[1], expectedFreq.ElementAt(i).Value);
             }
+            configData.Freq = tempFreq;
+            File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
+
+            ExpectedButtonClickedEvent?.Invoke(sender, e);
             this.Close();
         }
 

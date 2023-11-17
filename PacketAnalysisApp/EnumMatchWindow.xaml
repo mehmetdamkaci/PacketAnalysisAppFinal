@@ -26,7 +26,21 @@
                 Foreground="White" FontWeight="Bold" FontSize="13"/>
         <Label  HorizontalAlignment="Left" Margin="152,-111,0,0" VerticalAlignment="Top" Width="280" VerticalContentAlignment="Center"
                 HorizontalContentAlignment="Center" FontSize="20" Foreground="White" FontWeight="Bold" Content="ENUM EŞLEŞTİRMELERİ" />
-        <Label Content="Paketlerin Bulunduğu Enum'ı Seçiniz." HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Height="33" Width="590"
+        <Label Content="" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Height="33" Width="590"
                Foreground="White" FontSize="14" FontWeight="Bold" x:Name="messageLabel" HorizontalContentAlignment="Center"/>
+        <Button x:Name="beklenenFrekansButton" Height="72" FontWeight="Bold"  FontSize="14" Margin="210,38,0,533" HorizontalAlignment="Left" Width="164" Click="BeklenenFrekClicked">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="Beklenen"  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <TextBlock Text="Frekans" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <TextBlock Text="Değerleri" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+        </Button>
+        <Button x:Name="enumlarButton" Content="Enumlar" HorizontalAlignment="Left" Height="70" Margin="210,132,0,0" VerticalAlignment="Top"  Click="OKClick" 
+                FontWeight="Bold" FontSize="14" Width="164"/>
     </Grid>
 </Window>

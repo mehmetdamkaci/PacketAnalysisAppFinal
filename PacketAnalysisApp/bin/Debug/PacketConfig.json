@@ -1,4 +1,31 @@
 {
   "Name": "YZB_PAKET",
-  "Path": "C:\\Users\\PC_4232\\AppData\\Roaming\\PacketAnalysis\\Matched_Matched_Matched_Matched_Matched_Matched_Matched_Matched_Matched_Matched_Matched_Matched_Matched_Matched_Matched_Matched_YZB_Paket.cs"
+  "Path": "C:\\Users\\PC_4232\\AppData\\Roaming\\PacketAnalysis\\Matched_YZB_Paket.cs",
+  "Freq": {
+    "YZB_SURECLER.SUREC_1": 0,
+    "YZB_SURECLER.SUREC_2": 0,
+    "YZB_SURECLER.SUREC_3": 0,
+    "YZB_SURECLER.SUREC_4": 0,
+    "YZB_SURECLER.SUREC_5": 0,
+    "YZB_SISTEMLER.SISTEM_1": 0,
+    "YZB_SISTEMLER.SISTEM_2": 0,
+    "YZB_SISTEMLER.SISTEM_3": 0,
+    "YZB_SISTEMLER.SISTEM_4": 0,
+    "YZB_SISTEMLER.SISTEM_5": 0,
+    "YZB_NAVIGASYON.NAVIGASYON_1": 0,
+    "YZB_NAVIGASYON.NAVIGASYON_2": 0,
+    "YZB_NAVIGASYON.NAVIGASYON_3": 0,
+    "YZB_NAVIGASYON.NAVIGASYON_4": 0,
+    "YZB_NAVIGASYON.NAVIGASYON_5": 0,
+    "YZB_GPS.GPS_1": 0,
+    "YZB_GPS.GPS_2": 0,
+    "YZB_GPS.GPS_3": 0,
+    "YZB_GPS.GPS_4": 0,
+    "YZB_GPS.GPS_5": 0,
+    "YZB_KONUM.KONUM_1": 0,
+    "YZB_KONUM.KONUM_2": 0,
+    "YZB_KONUM.KONUM_3": 0,
+    "YZB_KONUM.KONUM_4": 0,
+    "YZB_KONUM.KONUM_5": 0
+  }
 }

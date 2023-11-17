@@ -30,6 +30,10 @@ namespace PacketAnalysisApp
 {
     public partial class MainWindow : Window
     {
+        SeriesCollection totalChartValue = new SeriesCollection { new ColumnSeries { Values = new ChartValues<int> { 0 }} };
+        
+        Export export = new Export();
+
         string paket = "";
 
         byte[] Key = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20 };
@@ -76,6 +80,7 @@ namespace PacketAnalysisApp
         Button realButton = new Button();
         Button chartExportButton = new Button();
 
+        Dictionary<string[], StackPanel> dimChartExportPanel = new Dictionary<string[], StackPanel>();
         Dictionary<string[], CartesianChart> dimChartList = new Dictionary<string[], CartesianChart>();
         Dictionary<string[], LineSeries> dimLineSeriesList = new Dictionary<string[], LineSeries>(new StringArrayComparer());
         Dictionary<string[], ChartValues<int>> dimLineValuesList = new Dictionary<string[], ChartValues<int>>(new StringArrayComparer());
@@ -87,6 +92,7 @@ namespace PacketAnalysisApp
         Button dimChartExportButton = new Button();
 
         Dictionary<string[], int> expectedFreq = new Dictionary<string[], int>(new StringArrayComparer());
+        Dictionary<string[], StackPanel> freqLabelStacks = new Dictionary<string[], StackPanel>(new StringArrayComparer());
 
         //----------------- PAKET BUTONLARI ----------------------
         Dictionary<string, Button> paketButtons  = new Dictionary<string, Button>();
@@ -96,8 +102,9 @@ namespace PacketAnalysisApp
         Dictionary<string, ColumnSeries> barColumnSeries = new Dictionary<string, ColumnSeries>();
         List<CartesianChart> barChartsToRemove = new List<CartesianChart>();
         public MainWindow()
-        {            
+        {                        
             InitializeComponent();
+            
             exportButton.IsEnabled = false;
             startConnect = true;
             disconnectButton.IsEnabled = false;
@@ -109,424 +116,81 @@ namespace PacketAnalysisApp
             // -------------------- ENUM YAPISININ OLULŞTURULMASI --------------------
             enumStruct = enumMatchWindow.enumStructMain;
             expectedFreq = enumMatchWindow.expectedFreq;
+            enumMatchWindow.ExpectedButtonClickedEvent += ExpectedFreqClicked;
+            var tooltip = (DefaultTooltip)pieChart.DataTooltip;
+            tooltip.SelectionMode = null;
+            tooltip.BorderBrush = Brushes.Cyan;
+            tooltip.Background = Brushes.DimGray;
+            tooltip.IsManipulationEnabled = false;
+
         }
 
-        public void Change_3DPieChart_Color(ExcelPieChart pieChart)
+        private void ExpectedFreqClicked(object sender, RoutedEventArgs e)
         {
-            const string PIE_PATH = "c:chartSpace/c:chart/c:plotArea/c:pie3DChart/c:ser";
-
-            //Get the nodes
-            var ws = pieChart.WorkSheet;
-            var nsm = ws.Drawings.NameSpaceManager;
-            var nschart = nsm.LookupNamespace("c");
-            var nsa = nsm.LookupNamespace("a");
-            var node = pieChart.ChartXml.SelectSingleNode(PIE_PATH, nsm);
-            var doc = pieChart.ChartXml;
-
-            //Add the node
-            var rand = new Random();
-            for (var i = 0; i < rowColor.Count; i++)
+            for (int i = 0; i < expectedFreq.Count; i++)
             {
-                //Create the data point node
-                var dPt = doc.CreateElement("dPt", nschart);
-
-                var idx = dPt.AppendChild(doc.CreateElement("idx", nschart));
-                var valattrib = idx.Attributes.Append(doc.CreateAttribute("val"));
-                valattrib.Value = i.ToString(CultureInfo.InvariantCulture);
-                node.AppendChild(dPt);
-
-                //Add the solid fill node
-                var spPr = doc.CreateElement("spPr", nschart);
-                var solidFill = spPr.AppendChild(doc.CreateElement("solidFill", nsa));
-                var srgbClr = solidFill.AppendChild(doc.CreateElement("srgbClr", nsa));
-                valattrib = srgbClr.Attributes.Append(doc.CreateAttribute("val"));
-
-                //Set the color
-                var color = ColorConverter(rowColor.ElementAt(i).Value);
-                valattrib.Value = System.Drawing.ColorTranslator.ToHtml(color).Replace("#", String.Empty);
-                dPt.AppendChild(spPr);
-            }                        
-        }
-
-        public System.Drawing.Color LightenColor(SolidColorBrush color, double factor)
-        {
-            int r = (int)Math.Min(color.Color.R + 255 * factor, 255);
-            int g = (int)Math.Min(color.Color.G + 255 * factor, 255);
-            int b = (int)Math.Min(color.Color.B + 255 * factor, 255);
-            return System.Drawing.Color.FromArgb(r, g, b);
+                chartList[expectedFreq.ElementAt(i).Key].Dispatcher.Invoke(() =>
+                {
+                    if (chartList[expectedFreq.ElementAt(i).Key].AxisY.Count > 0)
+                    {
+                        if (chartList[expectedFreq.ElementAt(i).Key].AxisY[0].Sections.Count > 0)
+                        {
+                            chartList[expectedFreq.ElementAt(i).Key].AxisY[0].Sections.Clear();
+                            chartList[expectedFreq.ElementAt(i).Key].AxisY[0].Sections = new SectionsCollection
+                            {
+                                new AxisSection
+                                {
+                                    Value = expectedFreq[expectedFreq.ElementAt(i).Key],
+                                    SectionWidth = 0,
+                                    Stroke = Brushes.Red,
+                                    SectionOffset = 0,
+                                    StrokeThickness = 2.5,
+                                    Fill = rowColor[expectedFreq.ElementAt(i).Key[0]]
+                                }
+                            };
+                        }
+                    }
+                });
+            }
         }
 
         //Grafikleri Dışarı aktarma fonksiyonu
         private void dimExportChartButtonClick(object sender, RoutedEventArgs e)
         {
-
+            Thread.Sleep(100);
+            dataGrid.Dispatcher.Invoke(new Action(() =>
+            {
+                var selecteItem = dataGrid.SelectedItem;
+                if (selecteItem != null)
+                {
+                    KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)selecteItem;
+                    export.ExportOnlyChart(dataGrid, "BOYUT", selectedRow.Key, dimChartXLabels[selectedRow.Key], dimLineValuesList[selectedRow.Key], dimChartExportPanel[selectedRow.Key]);
+                }
+            }));
         }
         private void exportChartButtonClick(object sender, RoutedEventArgs e)
         {
-            Task.Run(() =>
+            Thread.Sleep(20);
+            dataGrid.Dispatcher.Invoke(new Action(() =>
             {
-                Thread.Sleep(20);
-                dataGrid.Dispatcher.Invoke(new Action(async () =>
+                var selecteItem = dataGrid.SelectedItem;
+                if (selecteItem != null)
                 {
-                    var selecteItem = dataGrid.SelectedItem;
-                    if (selecteItem != null)
-                    {
-                        KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)selecteItem;
-
-                        string path = "";
-                        Microsoft.Win32.SaveFileDialog openFileDlg = new Microsoft.Win32.SaveFileDialog();
-                        openFileDlg.FileName = selectedRow.Key[0] + "_" + selectedRow.Key[1] + ".xlsx";
-                        Nullable<bool> result = openFileDlg.ShowDialog();
-
-                        if (result == true)
-                        {
-                            path = openFileDlg.FileName;
-                        }
-                        else return;
-
-
-
-                        var package = new ExcelPackage();
-                        var worksheetFreqChart = package.Workbook.Worksheets.Add("Frekans Grafiği");
-
-                        worksheetFreqChart.Cells[1, 1].Value = "ZAMAN";
-                        worksheetFreqChart.Cells[1, 2].Value = "FREKANS";
-                        worksheetFreqChart.Cells[1, 4].Value = "TOPLAM";
-                        worksheetFreqChart.Cells[1, 4].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-                        worksheetFreqChart.Cells[1, 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                        worksheetFreqChart.Cells[1, 2].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                        worksheetFreqChart.Cells[1, 4].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                        worksheetFreqChart.Cells[1, 1].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
-                        worksheetFreqChart.Cells[1, 2].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
-                        worksheetFreqChart.Cells[1, 4].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
-                        
-                        worksheetFreqChart.Cells[1, 2].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-
-                        var chart = (ExcelLineChart)worksheetFreqChart.Drawings.AddChart("Chart", eChartType.LineMarkers);
-                        chart.SetPosition(3 * 20, 9 * 20);
-                        chart.SetSize(1500, 300);
-                        chart.Name = selectedRow.Key[0] + " PAKETİ " + selectedRow.Key[1] + " PROJESİ";
-
-                        int length = chartXLabels.IndexOf(chartXLabels.Last());
-                        var freq = lineValuesList;
-
-                        Label title = (Label)chartExportPanel[selectedRow.Key].Children[0];
-                        title.Visibility = Visibility.Collapsed;
-                        ProgressBar chartExportProgress = (ProgressBar)chartExportPanel[selectedRow.Key].Children[1];
-                        Label chartExportLabel = (Label)chartExportPanel[selectedRow.Key].Children[2];
-                        chartExportProgress.Visibility = Visibility.Visible;
-                        chartExportProgress.Maximum = length;
-                        chartExportProgress.Minimum = 0;
-                        chartExportProgress.Value = 0;
-                        chartExportProgress.Height = 5;
-                        chartExportProgress.Margin = new Thickness(20, 5, 20, 0);
-
-
-                        for (int i = 2; i <= length + 2; i++)
-                        {
-                            chartExportProgress.Value += 1;
-
-                            int value = freq[selectedRow.Key][i - 2];
-                            worksheetFreqChart.Cells[i, 2].Value = value;
-                            worksheetFreqChart.Cells[i, 1].Value = chartXLabels[i - 2];
-                        }
-
-                        var scale = worksheetFreqChart.ConditionalFormatting.AddTwoColorScale(worksheetFreqChart.Cells[2, 2, worksheetFreqChart.Dimension.End.Row, 2]);
-                        scale.LowValue.Color = System.Drawing.Color.FromArgb(255, 255, 192, 192);
-                        scale.HighValue.Color = System.Drawing.Color.Green;
-
-                        await Task.Delay(1000);
-                        chartExportProgress.Visibility = Visibility.Collapsed;
-                        chartExportProgress.Value = 0;
-                        chartExportLabel.Visibility = Visibility.Visible;
-                        await Task.Delay(1000);
-                        chartExportLabel.Visibility = Visibility.Collapsed;
-                        title.Visibility = Visibility.Visible;
-
-                        worksheetFreqChart.Cells[2, 4].Formula = "Sum(" + worksheetFreqChart.Cells[2, 2].Address +
-                                        ":" + worksheetFreqChart.Cells[length + 2, 2].Address + ")";
-                        worksheetFreqChart.Cells[2, 4].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                        worksheetFreqChart.Cells[2, 4].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.Green));
-
-                        chart.Series.Add(worksheetFreqChart.Cells[2, 2, worksheetFreqChart.Dimension.End.Row, 2], worksheetFreqChart.Cells[2, 1, worksheetFreqChart.Dimension.End.Row, 1]);
-                        chart.Series[0].Header = selectedRow.Key[0] + " PAKETİ " + selectedRow.Key[1] + " PROJESİ";
-
-
-                        //colorScale.HighValue = 
-                        //colorScale = ((ExcelRange)worksheetFreqChart.Cells[2, 2, worksheetFreqChart.Dimension.End.Row, 2])
-
-
-                        if (new FileInfo(@path) != null) package.SaveAs(new FileInfo(@path));
-                        package.Dispose();
-                    }
-
-                }));
-            });
-            
+                    KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)selecteItem;
+                    export.ExportOnlyChart(dataGrid, "FREKANS", selectedRow.Key, chartXLabels, lineValuesList[selectedRow.Key], chartExportPanel[selectedRow.Key]);
+                }
+            }));            
         }
 
         //Dışarı aktarma butonu fonksiyonu (Excel İşlemleri)
         private void exportClick(object sender, RoutedEventArgs e)
-        {           
-            string path = "";
-
-            Microsoft.Win32.SaveFileDialog openFileDlg = new Microsoft.Win32.SaveFileDialog();
-            openFileDlg.FileName = "veriler_" + DateTime.Now.ToString("ddMMyy") + ".xlsx";
-            Nullable<bool> result = openFileDlg.ShowDialog();
-            
-            if (result == true)
-            {
-                path = openFileDlg.FileName;
-            }
-            else return;
-
-            if (path.Substring(path.LastIndexOf('.') + 1, 4) != "xlsx") path += ".xlsx";
-
-            var package = new ExcelPackage();
-            var worksheetTable = package.Workbook.Worksheets.Add("Genel Tablo");
-            var worksheetFrakans = package.Workbook.Worksheets.Add("Frakans Tablosu");
-            var worksheetChart = package.Workbook.Worksheets.Add("Grafikler");
-
-            exportButton.Visibility = Visibility.Collapsed;
-            progressBar.Visibility = Visibility.Visible;    
-            progressBar.Minimum = 0;
-            progressBar.Maximum = totalReceivedPacket.Count*2 + chartXLabels.Count;
-            Task.Run(() =>
-            {
-                ExcelPieChart pieExcelChart = (ExcelPieChart)worksheetTable.Drawings.AddChart("pieChart", eChartType.PieExploded3D);
-                var pieExcelSeries = pieExcelChart.Series;
-                pieExcelChart.DataLabel.ShowPercent = true;
-                pieExcelChart.DataLabel.ShowValue = true;
-                pieExcelChart.DataLabel.ShowLegendKey = true;
-
-                int rowTable = 2;
-                int columnFreq = 2;
-
-                worksheetTable.Cells[1, 1].Value = "PAKET ADI";
-                worksheetTable.Cells[1, 2].Value = "PROJE ADI";
-                worksheetTable.Cells[1, 3].Value = "TOPLAM GELEN PAKET SAYISI";
-                worksheetTable.Cells[1, 4].Value = "TOPLAM BOYUT";
-                worksheetTable.Cells[1, 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                worksheetTable.Cells[1, 2].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                worksheetTable.Cells[1, 3].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                worksheetTable.Cells[1, 4].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                worksheetTable.Cells[1, 1].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
-                worksheetTable.Cells[1, 2].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
-                worksheetTable.Cells[1, 3].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
-                worksheetTable.Cells[1, 4].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
-
-
-                int barChartPos = 2;
-                string paket = "";
-                int pieRow = 1;
-                worksheetTable.Cells[pieRow, 19].Value = "PAKET ADI";
-                worksheetTable.Cells[pieRow, 20].Value = "TOPLAM GELEN PAKET SAYISI";
-                worksheetTable.Cells[pieRow, 19].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                worksheetTable.Cells[pieRow, 20].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                worksheetTable.Cells[pieRow, 19].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
-                worksheetTable.Cells[pieRow, 20].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.LightGray));
-
-                foreach (var item in totalReceivedPacket)
-                {                    
-                    if (paket != item.Key[0])
-                    {
-                        int count = 0;
-                        pieRow++;
-                        foreach (var item2 in totalReceivedPacket)
-                        {
-                            if (item2.Key[0] == item.Key[0])
-                            {
-                                count++;
-                            }
-                        }
-
-                        var chart = worksheetTable.Drawings.AddChart(item.Key[0], eChartType.ColumnClustered);
-                        chart.SetPosition(barChartPos - 1, 0, 4, 0);                              
-                        var series = chart.Series.Add(worksheetTable.Cells[barChartPos, 3, rowTable + count - 1, 3], worksheetTable.Cells[barChartPos, 2, rowTable + count - 1, 2]);
-
-
-                        worksheetTable.Cells[pieRow, 19].Value = item.Key[0];
-                        worksheetTable.Cells[pieRow, 19].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                        worksheetTable.Cells[pieRow, 19].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
-                        worksheetTable.Cells[pieRow, 19].Style.Font.Bold = true;
-
-                        worksheetTable.Cells[pieRow, 20].Formula = "Sum(" + worksheetTable.Cells[barChartPos, 3].Address +
-                                                                ":" + worksheetTable.Cells[rowTable + count - 1, 3].Address + ")";
-                        worksheetTable.Cells[pieRow, 20].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                        worksheetTable.Cells[pieRow, 20].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
-                        worksheetTable.Cells[pieRow, 20].Style.Font.Bold = true;
-                        worksheetTable.Cells[pieRow, 20].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-
-                        series.Fill.Color = ColorConverter(rowColor[item.Key[0]]);
-                        series.Header = item.Key[0];
-                        chart.SetSize(800, (rowTable - barChartPos + count) * 20);
-                        barChartPos = rowTable + count;
-                    }
-
-                    string keyConcatenated = item.Key[0] + "_" + item.Key[1];
-
-                    worksheetFrakans.Cells[1, columnFreq].Value = keyConcatenated;
-                    worksheetFrakans.Cells[1, columnFreq].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                    worksheetFrakans.Cells[1, columnFreq].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
-                    worksheetFrakans.Cells[1, columnFreq].AutoFitColumns();
-
-                    
-                    worksheetTable.Cells[rowTable, 1].Style.Font.Bold = true;
-                    worksheetTable.Cells[rowTable, 2].Style.Font.Bold = true;
-                    worksheetTable.Cells[rowTable, 3].Style.Font.Bold = true;
-                    worksheetTable.Cells[rowTable, 4].Style.Font.Bold = true;
-
-                    worksheetTable.Cells[rowTable, 1].Value = item.Key[0];
-                    worksheetTable.Cells[rowTable, 2].Value = item.Key[1];
-                    worksheetTable.Cells[rowTable, 3].Value = item.Value[1];
-                    worksheetTable.Cells[rowTable, 4].Value = item.Value[3];
-
-                    worksheetTable.Cells[rowTable, 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                    worksheetTable.Cells[rowTable, 2].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                    worksheetTable.Cells[rowTable, 3].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                    worksheetTable.Cells[rowTable, 4].Style.Fill.PatternType = ExcelFillStyle.Solid;
-
-                    worksheetTable.Cells[rowTable, 1].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
-                    worksheetTable.Cells[rowTable, 2].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
-                    worksheetTable.Cells[rowTable, 3].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
-                    worksheetTable.Cells[rowTable, 4].Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[item.Key[0]]));
-
-                    worksheetTable.Cells[rowTable, 3].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-                    worksheetTable.Cells[rowTable, 4].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-
-                    rowTable++;
-                    columnFreq++;
-                    paket = item.Key[0];
-
-                    mainGrid.Dispatcher.Invoke(new Action(() => progressBar.Value += 1));
-                    
-                }
-                pieExcelChart.SetSize(300,500);
-                pieExcelChart.SetPosition((pieRow + pieChartValues.Count + 3)*10, 19*15 + 800);
-                pieExcelSeries.Add(worksheetTable.Cells[2, 20, pieRow , 20], worksheetTable.Cells[2, 19, pieRow, 19]);
-                Change_3DPieChart_Color(pieExcelChart);
-                worksheetTable.Cells.AutoFitColumns();
-                int length = chartXLabels.IndexOf(chartXLabels.Last());
-                var freq = lineValuesList;
-
-                worksheetFrakans.Cells["A2"].LoadFromCollection(chartXLabels.ToList().GetRange(0,length));
-
-                for (int i = 2; i < totalReceivedPacket.Count + 2; i++)
-                {
-                    for (int j = 2; j <= length + 1; j++)
-                    {
-                        int value = freq.ElementAt(i - 2).Value[j - 2];
-                        worksheetFrakans.Cells[j, i].Value = value;
-                        worksheetFrakans.Cells[j,i].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-
-                        var cell = worksheetFrakans.Cells[j, i];
-                        var border = cell.Style.Border;
-                        var fontWeight = cell.Style.Font;
-                        fontWeight.Bold = true;
-                        
-                        border.Top.Style = ExcelBorderStyle.Thick;
-                        border.Top.Color.SetColor(ColorConverter(rowColor[totalReceivedPacket.ElementAt(i - 2).Key[0]]));                        
-                        border.Left.Style = ExcelBorderStyle.Thick;
-                        border.Left.Color.SetColor(ColorConverter(rowColor[totalReceivedPacket.ElementAt(i - 2).Key[0]]));                        
-                        border.Bottom.Style = ExcelBorderStyle.Thick;
-                        border.Bottom.Color.SetColor(ColorConverter(rowColor[totalReceivedPacket.ElementAt(i - 2).Key[0]]));
-                        border.Right.Style = ExcelBorderStyle.Thick;
-                        border.Right.Color.SetColor(ColorConverter(rowColor[totalReceivedPacket.ElementAt(i - 2).Key[0]]));
-
-                        //var brushColor = rowColor[totalReceivedPacket.Keys.ElementAt(i - 2)[0]];
-                        //var color = new SolidColorBrush(Color.FromArgb((byte)70, brushColor.Color.R, brushColor.Color.G, brushColor.Color.B));
-
-                        if (value == 0)
-                        {
-                            worksheetFrakans.Cells[j, i].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                            worksheetFrakans.Cells[j, i].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(255, 255, 192, 192));
-                        }
-                        //else 
-                        //{
-                        //    worksheetFrakans.Cells[j, i].Style.Fill.PatternType = ExcelFillStyle.LightGray;
-                        //    worksheetFrakans.Cells[j, i].Style.Fill.BackgroundColor.SetColor(ColorConverter(color));
-                        //} 
-                    }
-                    mainGrid.Dispatcher.Invoke(new Action(() => progressBar.Value += 1));
-                }
-
-                paket = totalReceivedPacket.ElementAt(0).Key[0];
-                int chartRow = 0;
-                int chartColumn = 0;
-                for (int col = 2; col <= worksheetFrakans.Dimension.Columns; col++)
-                {                        
-                    if (paket != totalReceivedPacket.ElementAt(col - 2).Key[0])
-                    {
-                        chartRow++;
-                        chartColumn = 0;
-                    }
-                    if ((int)worksheetFrakans.Cells[2, col, worksheetFrakans.Dimension.End.Row, col].Max(x => x.Value) != 0)
-                    {
-                        var scale = worksheetFrakans.ConditionalFormatting.AddTwoColorScale(worksheetFrakans.Cells[2, col, worksheetFrakans.Dimension.End.Row, col]);
-                        //scale.LowValue.Color = LightenColor(rowColor[totalReceivedPacket.ElementAt(col - 2).Key[0]], 0.2);
-                        //scale.HighValue.Color = ColorConverter(rowColor[totalReceivedPacket.ElementAt(col - 2).Key[0]]);
-                        scale.LowValue.Color = System.Drawing.Color.FromArgb(255, 255, 192, 192);
-                        scale.HighValue.Color = System.Drawing.Color.Green;
-                    }
-                    var chart = (ExcelLineChart)worksheetChart.Drawings.AddChart("Chart" + col, eChartType.LineMarkers);                                        
-                    chart.SetPosition(chartRow*15, 0, 1 + chartColumn*13, 0);
-                    chart.SetSize(800, 300);
-                    var series = chart.Series.Add(worksheetFrakans.Cells[2, col, worksheetFrakans.Dimension.End.Row, col], worksheetFrakans.Cells[2, 1, worksheetFrakans.Dimension.End.Row, 1]);
-                    series.Header = worksheetTable.Cells[col, 2].Text;
-                    paket = totalReceivedPacket.ElementAt(col - 2).Key[0];
-                    chartColumn++;
-                    mainGrid.Dispatcher.Invoke(new Action(() => progressBar.Value += 1));
-                }
-
-                mainGrid.Dispatcher.Invoke(new Action(() => progressBar.Maximum += chartRow * 15 + 10));                
-                int countChartRow = 0;
-                for(int i = 0; i <= chartRow; i++)
-                {
-                    for(int j = 1; j <= 15;  j++)
-                    {
-                        mainGrid.Dispatcher.Invoke(new Action(() => progressBar.Value += 1));
-                        countChartRow++;
-                        worksheetChart.Cells[countChartRow, 1].Value = pieChartValues.ElementAt(i).Key;                            
-                        worksheetChart.Row(countChartRow).Style.Fill.PatternType = ExcelFillStyle.Solid;
-                        worksheetChart.Row(countChartRow).Style.Fill.BackgroundColor.SetColor(ColorConverter(rowColor[pieChartValues.ElementAt(i).Key]));
-                    }
-                        
-                }
-                worksheetChart.Cells.AutoFitColumns();
-
-                mainGrid.Dispatcher.Invoke(new Action(() => progressBar.Value = progressBar.Maximum));
-                Thread.Sleep(1000);
-                if (new FileInfo(@path) != null) package.SaveAs(new FileInfo(@path));
-                package.Dispose();
-                mainGrid.Dispatcher.Invoke((new Action(() =>
-                {
-                    progressBar.Visibility = Visibility.Collapsed;
-                    progressBar.Value = 0;
-                    exportLabel.Visibility = Visibility.Visible;
-                })));
-                Thread.Sleep(1500);
-                mainGrid.Dispatcher.Invoke((new Action(() =>
-                {
-                    exportLabel.Visibility = Visibility.Collapsed;
-                    exportButton.Visibility = Visibility.Visible;
-                })));
-
-                
-            });
+        {
+            export.MainExport(dataGrid, progressBar, totalReceivedPacket, rowColor, chartXLabels, lineValuesList, pieChartValues, exportButton, exportLabel, dimChartXLabels, dimLineValuesList);
         }
 
         private void BrowseExportButton(object sender, RoutedEventArgs e)
         {
             throw new NotImplementedException();
-        }
-
-        //Excel Hücreleri için renk dönüştürücü
-        private System.Drawing.Color ColorConverter(SolidColorBrush brush)
-        {
-            byte red = brush.Color.R;
-            byte green = brush.Color.G;
-            byte blue = brush.Color.B;
-            return System.Drawing.Color.FromArgb(red, green, blue);
         }
 
         // -------------------- PENCERE MOUSE EVENTLERİ --------------------
@@ -649,7 +313,7 @@ namespace PacketAnalysisApp
             else paket = "";
         }
 
-        //Grafik için butonla
+        //Grafik için butonlar
 
         private void LoadedChartExportPanel(object sender, RoutedEventArgs e)
         {
@@ -664,6 +328,23 @@ namespace PacketAnalysisApp
                         chartExportPanel[selectedRow.Key] = sender as StackPanel;
                         chartExportPanel[selectedRow.Key].Children[1].Visibility = Visibility.Collapsed;
                         chartExportPanel[selectedRow.Key].Children[2].Visibility = Visibility.Collapsed;
+                    }
+                }));
+            });
+        }
+        private void LoadedDimChartExportPanel(object sender, RoutedEventArgs e)
+        {
+            dataGrid.Dispatcher.Invoke(() =>
+            {
+                dataGrid.Dispatcher.Invoke(new Action(() =>
+                {
+                    var selecteItem = dataGrid.SelectedItem;
+                    if (selecteItem != null)
+                    {
+                        KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)selecteItem;
+                        dimChartExportPanel[selectedRow.Key] = sender as StackPanel;
+                        dimChartExportPanel[selectedRow.Key].Children[1].Visibility = Visibility.Collapsed;
+                        dimChartExportPanel[selectedRow.Key].Children[2].Visibility = Visibility.Collapsed;
                     }
                 }));
             });
@@ -687,7 +368,9 @@ namespace PacketAnalysisApp
         //Enum Dosyası değiştirildiğinde ve program başlatıldığında veri yapılarını oluşturan fonksiyon
         public void createDataStruct()
         {
+            freqLabelStacks = new Dictionary<string[], StackPanel>(new StringArrayComparer());
             chartExportPanel = new Dictionary<string[], StackPanel>();
+            dimChartExportPanel = new Dictionary<string[], StackPanel>();
 
             barCharts = new Dictionary<string, CartesianChart>();
             barColumnSeries = new Dictionary<string, ColumnSeries>();
@@ -696,9 +379,9 @@ namespace PacketAnalysisApp
             buttonsToRemove = buttonPiePanel.Children.OfType<Button>().ToList();
             barChartsToRemove = buttonPiePanel.Children.OfType<CartesianChart>().ToList();
 
-            chartList = new Dictionary<string[], CartesianChart>();
+            chartList = new Dictionary<string[], CartesianChart>(new StringArrayComparer());
             lineSeriesList = new Dictionary<string[], LineSeries>();
-            lineValuesList = new Dictionary<string[], ChartValues<int>>();
+            lineValuesList = new Dictionary<string[], ChartValues<int>>(new StringArrayComparer());
             chartXLabels = new ObservableCollection<string>();
             chartStatuses = new Dictionary<string, string>();
             paketButtons = new Dictionary<string, Button>();
@@ -764,6 +447,9 @@ namespace PacketAnalysisApp
                     dimLineValuesList.Add(paket_proje, new ChartValues<int>());
                     dimChartXLabels.Add(paket_proje, new ObservableCollection<string>());
                     dimChartStatuses.Add(paket_proje[0] + "_" + paket_proje[1], "DEFAULT");
+                    dimChartExportPanel.Add(paket_proje, new StackPanel());
+
+                    freqLabelStacks.Add(paket_proje, new StackPanel());
                 }
             }
 
@@ -779,41 +465,43 @@ namespace PacketAnalysisApp
         //Bir saniyede bir tabloyu ve frekans değerlerini güncelleyen fonksiyon
         private void UpdateFrekans(object sender, EventArgs e)
         {
-
-            chartXLabels.Add(DateTime.Now.ToString("HH:mm:ss"));
-            for (int i = 0; i < totalReceivedPacket.Count; i++)
+            Task.Run(() =>
             {
-                string[] paket_proje = totalReceivedPacket.Keys.ElementAt(i);
-                int currentTotal = totalReceivedPacket[paket_proje][1];
-                dataGrid.Dispatcher.Invoke(new Action(() =>
+                chartXLabels.Add(DateTime.Now.ToString("HH:mm:ss"));
+                for (int i = 0; i < totalReceivedPacket.Count; i++)
                 {
-                    var item = dataSource.FirstOrDefault(j => j.Key == paket_proje);
-                    if (item.Key == null)
+                    string[] paket_proje = totalReceivedPacket.Keys.ElementAt(i);
+                    int currentTotal = totalReceivedPacket[paket_proje][1];
+                    dataGrid.Dispatcher.Invoke(new Action(() =>
                     {
-                    }
-                    else
-                    {
-                        int index = dataSource.IndexOf(item);
-                        dataSource[index] = new KeyValuePair<string[], int[]>(item.Key, new int[] { currentTotal - privTotal[i], item.Value[1], item.Value[2], item.Value[3] });
-                    }
-                }));
+                        var item = dataSource.FirstOrDefault(j => j.Key == paket_proje);
+                        if (item.Key == null)
+                        {
+                        }
+                        else
+                        {
+                            int index = dataSource.IndexOf(item);
+                            dataSource[index] = new KeyValuePair<string[], int[]>(item.Key, new int[] { currentTotal - privTotal[i], item.Value[1], item.Value[2], item.Value[3] });
+                        }
 
-                totalReceivedPacket[paket_proje][0] = currentTotal - privTotal[i];
-                privTotal[i] = currentTotal;
-                lineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Add(totalReceivedPacket[paket_proje][0]);
-                lineSeriesList[totalReceivedPacket.Keys.ElementAt(i)].Values = lineValuesList[totalReceivedPacket.Keys.ElementAt(i)];
+                        totalReceivedPacket[paket_proje][0] = currentTotal - privTotal[i];
+                        privTotal[i] = currentTotal;
+                        lineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Add(totalReceivedPacket[paket_proje][0]);
+                        lineSeriesList[totalReceivedPacket.Keys.ElementAt(i)].Values = lineValuesList[totalReceivedPacket.Keys.ElementAt(i)];
 
-                setChartStatues(chartList[totalReceivedPacket.Keys.ElementAt(i)], lineValuesList[totalReceivedPacket.Keys.ElementAt(i)],
-                                chartXLabels, chartStatuses[paket_proje[0] + "_" + paket_proje[1]]);
+                        setChartStatues(chartList[totalReceivedPacket.Keys.ElementAt(i)], lineValuesList[totalReceivedPacket.Keys.ElementAt(i)],
+                                        chartXLabels, chartStatuses[paket_proje[0] + "_" + paket_proje[1]]);
 
-                setChartStatues(dimChartList[paket_proje], dimLineValuesList[paket_proje],
-                                dimChartXLabels[paket_proje], dimChartStatuses[paket_proje[0] + "_" + paket_proje[1]]);
-
-            }
+                        setChartStatues(dimChartList[paket_proje], dimLineValuesList[paket_proje],
+                                        dimChartXLabels[paket_proje], dimChartStatuses[paket_proje[0] + "_" + paket_proje[1]]);
+                    }));
+                }
+            });
         }
 
         public void setChartStatues(CartesianChart chart, ChartValues<int> value, ObservableCollection<string> label, string chartName)
         {
+
             try
             {
                 switch (chartName)
@@ -822,19 +510,40 @@ namespace PacketAnalysisApp
                         chart.Zoom = ZoomingOptions.None;
                         chart.Pan = PanningOptions.None;
                         chart.AxisY[0].MinValue = -1;
-                        chart.AxisY[0].MaxValue = value.Max() + 1;
+                        chart.AxisY[0].MaxValue = (chart.AxisY[0].Sections.Count > 0) ?
+                            ((chart.AxisY[0].Sections[0].Value > value.Max()) ? chart.AxisY[0].MaxValue = chart.AxisY[0].Sections[0].Value + 1 : 
+                            chart.AxisY[0].MaxValue = value.Max() + 1) :
+                            chart.AxisY[0].MaxValue = value.Max() + 1;
                         chart.AxisX[0].MinValue = 0;
                         chart.AxisX[0].MaxValue = label.Count - 1;
                         break;
                     case "REAL":
                         chart.AxisY[0].MinValue = -1;
-                        chart.AxisY[0].MaxValue = value.Max() + 1;
+                        chart.AxisY[0].MaxValue = (chart.AxisY[0].Sections.Count > 0) ? 
+                            ((chart.AxisY[0].Sections[0].Value > value.Max()) ? chart.AxisY[0].MaxValue = chart.AxisY[0].Sections[0].Value + 1 :
+                            chart.AxisY[0].MaxValue = value.Max() + 1) : 
+                            chart.AxisY[0].MaxValue = value.Max() + 1;
                         chart.AxisX[0].MinValue = label.Count - 20;
                         chart.AxisX[0].MaxValue = label.Count - 1;
                         break;
                     case "DEFAULT":
-                        chart.Zoom = ZoomingOptions.X;
-                        chart.Pan = PanningOptions.X;
+
+                        dataGrid.Dispatcher.Invoke(new Action(() =>
+                        {
+                            if (chart.AxisY.Count > 0)
+                            {
+                                chart.AxisY[0].MinValue = -1;
+                                chart.AxisY[0].MaxValue = (chart.AxisY[0].Sections.Count > 0) ?
+                                    ((chart.AxisY[0].Sections[0].Value > value.Max()) ? chart.AxisY[0].MaxValue = chart.AxisY[0].Sections[0].Value + 1 :
+                                    chart.AxisY[0].MaxValue = value.Max() + 1) :
+                                    chart.AxisY[0].MaxValue = value.Max() + 1;
+                            }
+
+                            chart.Zoom = ZoomingOptions.X;
+                            chart.Pan = PanningOptions.X;
+                        }));
+
+                        
                         break;
                 }
             }
@@ -945,7 +654,7 @@ namespace PacketAnalysisApp
         // -------------------- Ayarlar Buton Fonksiyonu --------------------
         public void AyarlarClicked(object sender, RoutedEventArgs e)
         {
-            enumMatchWindow.Show();         
+            enumMatchWindow.Show();
         }
 
         //Frekans grafikleri yüklendiğinde oluşan event
@@ -965,11 +674,23 @@ namespace PacketAnalysisApp
                 }
             }));
         }
-        private void LoadFreqChart(object sender, RoutedEventArgs e)
+
+        private void FreqLabelStackLoaded(object sender, RoutedEventArgs e)
         {
-            //expectedFreq = enumMatchWindow.expectedFreq;
+            dataGrid.Dispatcher.Invoke(new Action(() =>
+            {
+                var selecteItem = dataGrid.SelectedItem;
+                if (selecteItem != null)
+                {
+                    KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)selecteItem;
+                    freqLabelStacks[selectedRow.Key] = sender as StackPanel;                    
+                }
+            }));
+        }
 
-
+        private void LoadFreqChart(object sender, RoutedEventArgs e)
+        {            
+            //expectedFreq = enumMatchWindow.expectedFreq;            
             dataGrid.Dispatcher.Invoke(new Action(() =>
             {
                 var selecteItem = dataGrid.SelectedItem;
@@ -977,34 +698,18 @@ namespace PacketAnalysisApp
                 {
                     KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)selecteItem;
                     chartList[selectedRow.Key] = sender as CartesianChart;
+                    chartList[selectedRow.Key].AxisY[0].Sections.Clear();
                     chartList[selectedRow.Key].AxisY[0].Sections = new SectionsCollection
                     {
                         new AxisSection
                         {
-                            Value = expectedFreq[selectedRow.Key], // Referans çizgisinin konumu
-                            SectionWidth = 0, // Referans çizgisinin kalınlığı
+                            Value = expectedFreq[selectedRow.Key],
+                            SectionWidth = 0,
                             Stroke = Brushes.Red,
                             SectionOffset = 0,
                             StrokeThickness = 2.5,
-                            Fill = rowColor[selectedRow.Key[0]]
                         }
-                    };
-                //    chartList[selectedRow.Key].AxisY.Add(new Axis
-                //    {
-                //        Title = "",
-                //        Labels = null,                        
-                //        Sections = new SectionsCollection
-                        
-                //{
-                //    new AxisSection
-                //    {
-                //        Value = 0.1, // Referans çizgisinin konumu
-                //        SectionWidth = 0, // Referans çizgisinin kalınlığı
-                //        Stroke = System.Windows.Media.Brushes.Red,
-                //        StrokeThickness = 2
-                //    }
-                //}
-                //    });
+                    };                    
                     chartList[selectedRow.Key].Name = selectedRow.Key.ElementAt(0) + "_" + selectedRow.Key.ElementAt(1);
                     chartList[selectedRow.Key].Height = 200;
                     chartList[selectedRow.Key].Series = new SeriesCollection { lineSeriesList[selectedRow.Key] };
@@ -1070,7 +775,8 @@ namespace PacketAnalysisApp
                     Values = pieChartValues[name],
                     DataLabels = true,
                     LabelPoint = labelPoint,
-                    FontSize = 12
+                    FontSize = 12,
+                    PushOut = 0                                        
                 };
                 piechartPaket.Add(pieSeries);
 
@@ -1137,10 +843,12 @@ namespace PacketAnalysisApp
 
         private void enumMatchClosed(object sender, EventArgs e)
         {
-            expectedFreq = enumMatchWindow.expectedFreq;
+            
             enumMatchWindow = new EnumMatchWindow();
+            expectedFreq = enumMatchWindow.expectedFreq;
             enumMatchWindow.Closed += enumMatchClosed;
             enumMatchWindow.OkKaydetLog.Click += enumKaydetClick;
+            enumMatchWindow.ExpectedButtonClickedEvent += ExpectedFreqClicked;
         }
 
         //Filtrelemeyi sağlayan fonksiyon
@@ -1195,6 +903,39 @@ namespace PacketAnalysisApp
             }
         }
 
+        public void setExpectedFreqLabel(string[] key)
+        {
+            double packetTotal = lineValuesList[key].Count;
+            int eqFreq = lineValuesList[key].Count(chartValue => chartValue != 0 & chartValue == expectedFreq[key]);
+            int downFreq = lineValuesList[key].Count(chartValue => chartValue != 0 & chartValue < expectedFreq[key]);
+            int upFreq = lineValuesList[key].Count(chartValue => chartValue != 0 & chartValue > expectedFreq[key]);
+            int zeroFreq = lineValuesList[key].Count(chartValue => chartValue == 0);
+
+            ((Label)((StackPanel)freqLabelStacks[key].Children[0]).Children[0]).Content = "Frekansı Sıfır (sn) : " + zeroFreq.ToString()   
+                                                +" (%" + ((double)(zeroFreq / packetTotal) * 100).ToString("F2") + ")";
+            ((Label)((StackPanel)freqLabelStacks[key].Children[0]).Children[0]).Background = rowColor[key[0]];
+            ((Label)((StackPanel)freqLabelStacks[key].Children[0]).Children[0]).BorderBrush = Brushes.WhiteSmoke;
+            ((Label)((StackPanel)freqLabelStacks[key].Children[0]).Children[0]).BorderThickness = new Thickness(2,2,2,1);
+
+            ((Label)((StackPanel)freqLabelStacks[key].Children[0]).Children[1]).Content = "Frekansı Beklenen Frekansta (sn) : " + eqFreq.ToString()
+                                                + " (%" + ((double)(eqFreq / packetTotal) * 100).ToString("F2") + ")";
+            ((Label)((StackPanel)freqLabelStacks[key].Children[0]).Children[1]).Background = rowColor[key[0]];
+            ((Label)((StackPanel)freqLabelStacks[key].Children[0]).Children[1]).BorderBrush = Brushes.WhiteSmoke;
+            ((Label)((StackPanel)freqLabelStacks[key].Children[0]).Children[1]).BorderThickness = new Thickness(2, 1, 2, 2);
+
+            ((Label)((StackPanel)freqLabelStacks[key].Children[1]).Children[0]).Content = "Frekansı Beklenen Frekansın Üstünde (sn) : " + upFreq.ToString()
+                                                                        + " (%" + ((double)(upFreq / packetTotal) * 100).ToString("F2") + ")";
+            ((Label)((StackPanel)freqLabelStacks[key].Children[1]).Children[0]).Background = rowColor[key[0]];
+            ((Label)((StackPanel)freqLabelStacks[key].Children[1]).Children[0]).BorderBrush = Brushes.WhiteSmoke;
+            ((Label)((StackPanel)freqLabelStacks[key].Children[1]).Children[0]).BorderThickness = new Thickness(2, 2, 2, 1);
+
+            ((Label)((StackPanel)freqLabelStacks[key].Children[1]).Children[1]).Content = "Frekansı Beklenen Frekansın Altında (sn) : " + downFreq.ToString()
+                                                + " (%" + ((double)(downFreq / packetTotal) * 100).ToString("F2") + ")";
+            ((Label)((StackPanel)freqLabelStacks[key].Children[1]).Children[1]).Background = rowColor[key[0]];
+            ((Label)((StackPanel)freqLabelStacks[key].Children[1]).Children[1]).BorderBrush = Brushes.WhiteSmoke;
+            ((Label)((StackPanel)freqLabelStacks[key].Children[1]).Children[1]).BorderThickness = new Thickness(2, 1, 2, 2);
+        }
+
         //Paketlerin alındığı fonksiyon bir thread'te çalışır
         public void receiveData()
         {
@@ -1212,18 +953,17 @@ namespace PacketAnalysisApp
                 totalReceivedPacket[paket_proje][2] = bytes.Length;
                 totalReceivedPacket[paket_proje][3] += bytes.Length;
 
-                //MessageBox.Show(paket_proje[0] + "   " + paket_proje[1]);
-
-                //for(int i = 0; i < dimLineValuesList.Count; i++)
-                //{
-                //    MessageBox.Show(dimLineValuesList.ElementAt(i).Key[0] + "  " + dimLineValuesList.ElementAt(i).Key[1]);
-                //}
-
-
+                
 
                 int total = 0;
                 dataGrid.Dispatcher.Invoke(new System.Action(() =>
                 {
+                    if (freqLabelStacks[paket_proje].Children.Count > 0 & !rowColorStart)
+                    {
+                        setExpectedFreqLabel(paket_proje);
+
+                    }
+
                     dimLineValuesList[paket_proje].Add(bytes.Length);
                     dimLineSeriesList[paket_proje].Values = dimLineValuesList[paket_proje];
                     dimChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss"));
@@ -1374,64 +1114,26 @@ namespace PacketAnalysisApp
             else
             {
                 if (timer != null) timer.Start();
-                foreach (var button in paketButtons)
-                {
-                    button.Value.Visibility = Visibility.Visible;
-                }
             }
-            borderSocketPanel.Visibility = Visibility.Collapsed;
 
             subscriber = new Thread(new ThreadStart(receiveData));
             subscriber.IsBackground = true;
             subscriber.Start();
-
+            connectButton.IsEnabled = false;
+            disconnectButton.IsEnabled = true;
         }
 
         //Soket Paneldeki bağlantıyı kes butonuna tıklandığında oluşan event
         private void DisconnectButtonClicked(object sender, RoutedEventArgs e)
         {
-            //MessageBox.Show(expectedFreq.Count.ToString());
-
             subscriber.Abort();
             stop = true;
             disconnect = true;
             enumMatchWindow.disconnect = disconnect;
             if (!subSocket.IsDisposed) subSocket.Close();
-            borderSocketPanel.Visibility = Visibility.Collapsed;
-            foreach (var button in paketButtons)
-            {
-                button.Value.Visibility = Visibility.Visible;
-            }
-        }
+            disconnectButton.IsEnabled = false;
+            connectButton.IsEnabled = true;
 
-        //Soket Panel butonuna tıklandığında oluşan event
-        private void SocketPanelButtonClicked(object sender, RoutedEventArgs e)
-        {
-
-            if (!startConnect)
-            {
-                if (borderSocketPanel.Visibility == Visibility.Visible)
-                {
-                    borderSocketPanel.Visibility = Visibility.Collapsed;
-                    foreach (var button in paketButtons)
-                    {
-                        button.Value.Visibility = Visibility.Visible;
-                    }
-                }
-                else
-                {
-                    borderSocketPanel.Visibility = Visibility.Visible;
-                    foreach (var button in paketButtons)
-                    {
-                        button.Value.Visibility = Visibility.Collapsed;
-                    }
-                    foreach (var chart in barCharts)
-                    {
-                        chart.Value.Visibility = Visibility.Collapsed;
-                    }
-                }
-            }
-
-        }
+        }       
     }
 }
