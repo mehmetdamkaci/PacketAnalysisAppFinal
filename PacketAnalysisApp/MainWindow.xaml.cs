@@ -4,6 +4,7 @@ using LiveCharts.Definitions.Charts;
 using LiveCharts.Wpf;
 using NetMQ;
 using NetMQ.Sockets;
+using Newtonsoft.Json;
 using OfficeOpenXml;
 using OfficeOpenXml.Drawing.Chart;
 using OfficeOpenXml.Style;
@@ -93,6 +94,7 @@ namespace PacketAnalysisApp
 
         Dictionary<string[], int> expectedFreq = new Dictionary<string[], int>(new StringArrayComparer());
         Dictionary<string[], StackPanel> freqLabelStacks = new Dictionary<string[], StackPanel>(new StringArrayComparer());
+        Dictionary<string[], TextBox> expectedFreqBoxs = new Dictionary<string[], TextBox>(new StringArrayComparer());
 
         //----------------- PAKET BUTONLARI ----------------------
         Dictionary<string, Button> paketButtons  = new Dictionary<string, Button>();
@@ -145,7 +147,6 @@ namespace PacketAnalysisApp
                                     Stroke = Brushes.Red,
                                     SectionOffset = 0,
                                     StrokeThickness = 2.5,
-                                    Fill = rowColor[expectedFreq.ElementAt(i).Key[0]]
                                 }
                             };
                         }
@@ -368,6 +369,7 @@ namespace PacketAnalysisApp
         //Enum Dosyası değiştirildiğinde ve program başlatıldığında veri yapılarını oluşturan fonksiyon
         public void createDataStruct()
         {
+            expectedFreqBoxs = new Dictionary<string[], TextBox>(new StringArrayComparer());
             freqLabelStacks = new Dictionary<string[], StackPanel>(new StringArrayComparer());
             chartExportPanel = new Dictionary<string[], StackPanel>();
             dimChartExportPanel = new Dictionary<string[], StackPanel>();
@@ -450,6 +452,7 @@ namespace PacketAnalysisApp
                     dimChartExportPanel.Add(paket_proje, new StackPanel());
 
                     freqLabelStacks.Add(paket_proje, new StackPanel());
+                    expectedFreqBoxs.Add(paket_proje, new TextBox());
                 }
             }
 
@@ -675,6 +678,21 @@ namespace PacketAnalysisApp
             }));
         }
 
+        
+        private void ExpectedTextBoxLoad(object sender, RoutedEventArgs e)
+        {
+            dataGrid.Dispatcher.Invoke(new Action(() =>
+            {
+                var selecteItem = dataGrid.SelectedItem;
+                if (selecteItem != null)
+                {
+                    KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)selecteItem;
+                    expectedFreqBoxs[selectedRow.Key] = sender as TextBox;
+                    expectedFreqBoxs[selectedRow.Key].Text = expectedFreq[selectedRow.Key].ToString();
+                    expectedFreqBoxs[selectedRow.Key].Name = selectedRow.Key[0] + "_" + selectedRow.Key[1];
+                }
+            }));
+        }
         private void FreqLabelStackLoaded(object sender, RoutedEventArgs e)
         {
             dataGrid.Dispatcher.Invoke(new Action(() =>
@@ -849,6 +867,35 @@ namespace PacketAnalysisApp
             enumMatchWindow.Closed += enumMatchClosed;
             enumMatchWindow.OkKaydetLog.Click += enumKaydetClick;
             enumMatchWindow.ExpectedButtonClickedEvent += ExpectedFreqClicked;
+        }
+
+        private void ExpectedBoxKeyDown(object sender, KeyEventArgs e)
+        {
+            
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                
+                dataGrid.Dispatcher.Invoke(new Action(() =>
+                {
+                    for (int i = 0; i < dataGrid.Items.Count; i++)
+                    {
+                        DataGridRow row = (DataGridRow)dataGrid.ItemContainerGenerator.ContainerFromIndex(i);
+                        if (row != null)
+                        {
+                            string[] name = ((KeyValuePair<string[], int[]>)row.Item).Key;
+                            if (name[0] + "_" + name[1] == (sender as TextBox).Name)
+                            {                                
+                                expectedFreq[name] = Convert.ToInt32((sender as TextBox).Text);
+                                enumMatchWindow.configData.Freq[name[0] + "." + name[1]] = expectedFreq[name];
+                                File.WriteAllText("PacketConfig.json", JsonConvert.SerializeObject(enumMatchWindow.configData, Formatting.Indented));
+                                ExpectedFreqClicked(sender, e);
+                                return;
+                            }
+                            
+                        }
+                    }
+                }));
+            }
         }
 
         //Filtrelemeyi sağlayan fonksiyon

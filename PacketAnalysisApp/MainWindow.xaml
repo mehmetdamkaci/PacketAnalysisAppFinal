@@ -110,6 +110,10 @@
                                         <Button Content="Zoom-" HorizontalContentAlignment="Center" Width="40" Click="zoomButton_Click" Loaded="zoomButtonLoaded"/>
                                         <Button Content="REAL" HorizontalContentAlignment="Center" Width="40" Click="realButton_Click" Loaded="realButtonLoaded"/>
                                         <Button Content="Dışarı Aktar" HorizontalContentAlignment="Center" Width="80" Click="exportChartButtonClick" Loaded="exportChartButtonLoaded"/>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="800,0,0,0">
+                                            <Label Content="Beklenen Frekans" Background="LightGray" Foreground="Black" FontWeight="Bold"/>
+                                            <TextBox Width="50" Height="30" TextAlignment="Center" VerticalContentAlignment="Center" Margin="5,0,0,0" Loaded="ExpectedTextBoxLoad" KeyDown="ExpectedBoxKeyDown"/>
+                                        </StackPanel>
                                     </StackPanel >
                                     <StackPanel Orientation="Vertical">
                                         <lvc:CartesianChart Margin="20,0,20,10" x:Name="realTimeChart" Background="Transparent" Zoom="None" Loaded="LoadFreqChart" ScrollMode="None" Pan="X"

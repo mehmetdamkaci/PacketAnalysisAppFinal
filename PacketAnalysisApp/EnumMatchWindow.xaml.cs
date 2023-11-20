@@ -87,7 +87,7 @@ namespace PacketAnalysisApp
 
         public string paketName;
         public string paketPath;
-        CONFIG configData;
+        public CONFIG configData;
 
         public string jsonPath = "PacketConfig.json";
         public bool disconnect = false;
@@ -195,6 +195,15 @@ namespace PacketAnalysisApp
 
             }
 
+            Button mainBackButton = new Button();
+            mainBackButton.Content = "Geri";
+            mainBackButton.HorizontalAlignment = HorizontalAlignment.Left;
+            mainBackButton.Width = 80;
+            mainBackButton.Margin = new Thickness(0,20,0,20);
+            mainBackButton.FontWeight = FontWeights.Bold;
+            mainBackButton.Click += MainBackButtonClicked;
+            stackPanel.Children.Add(mainBackButton);
+            
 
             KaydetButton = new Button();
             KaydetButton.Content = "Kaydet";
@@ -209,6 +218,18 @@ namespace PacketAnalysisApp
             kaydetAnaSayfaButon.Children.Add(KaydetButton);
             buttons.Add(KaydetButton);
 
+        }
+
+        private void MainBackButtonClicked(object sender, RoutedEventArgs e)
+        {
+            foreach (Button button in buttons)
+            {
+                button.Visibility = Visibility.Collapsed;
+            }
+            (sender as Button).Visibility = Visibility.Collapsed;
+            messageLabel.Visibility = Visibility.Collapsed;
+            beklenenFrekansButton.Visibility = Visibility.Visible;
+            enumlarButton.Visibility = Visibility.Visible;
         }
 
         private void buttonMouseLeave(object sender, MouseEventArgs e)
@@ -781,7 +802,7 @@ namespace PacketAnalysisApp
         }
 
         private void OKClick(object sender, RoutedEventArgs e)
-        {
+        {            
             if (!disconnect)
             {
                 MessageBox.Show("Soket Panelden Bağlanıyı Kesiniz.");
@@ -789,6 +810,7 @@ namespace PacketAnalysisApp
             }
             enumlarButton.Visibility = Visibility.Collapsed;
             beklenenFrekansButton.Visibility = Visibility.Collapsed;
+            messageLabel.Visibility = Visibility.Visible;
             messageLabel.Content = "Paketlerin Bulunduğu Enum'ı Seçiniz.";
             viewEnums(FileNameTextBox.Text);
         }
@@ -869,7 +891,7 @@ namespace PacketAnalysisApp
 
         private void ExpectedBackButtonClicked(object sender, RoutedEventArgs e)
         {
-            expectedMainStack.Visibility = Visibility.Collapsed;
+            if(expectedMainStack != null) expectedMainStack.Visibility = Visibility.Collapsed;
             messageLabel.Visibility = Visibility.Collapsed;
             beklenenFrekansButton.Visibility = Visibility.Visible;
             enumlarButton.Visibility = Visibility.Visible;
