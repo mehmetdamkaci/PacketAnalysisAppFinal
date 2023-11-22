@@ -132,6 +132,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="DataKeeper.cs" />
     <Compile Include="Export.cs" />
     <Compile Include="KeyValueConverterDim.cs" />
     <Compile Include="KeyValueConverterFreq.cs" />

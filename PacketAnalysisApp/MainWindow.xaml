@@ -157,10 +157,14 @@
                                         <Button Content="Zoom-" HorizontalContentAlignment="Center" Width="40" Click="dimZoomButton_Click" Loaded="zoomButtonLoaded"/>
                                         <Button Content="REAL" HorizontalContentAlignment="Center" Width="40" Click="dimRealButton_Click" Loaded="realButtonLoaded"/>
                                         <Button Content="Dışarı Aktar" HorizontalContentAlignment="Center" Width="80" Click="dimExportChartButtonClick" Loaded="exportChartButtonLoaded"/>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="800,0,0,0">
+                                            <Label Content="Beklenen Boyut" Background="LightGray" Foreground="Black" FontWeight="Bold"/>
+                                            <TextBox Width="50" Height="30" TextAlignment="Center" VerticalContentAlignment="Center" Margin="5,0,0,0" Loaded="ExpectedDimTextBoxLoad" KeyDown="ExpectedDimBoxKeyDown"/>
+                                        </StackPanel>
                                     </StackPanel>
                                     <lvc:CartesianChart Margin="20,0,20,10" Background="Transparent" Zoom="None" Loaded="LoadDimChart" ScrollMode="None" Pan="X"
-                                                        DisableAnimations ="True" Hoverable="False" AllowDrop="False" DataTooltip="{x:Null}" Focusable="True" MouseWheel="ChartZoomEvent"
-                                                        MouseLeftButtonDown="ChartPanEvent" MouseLeftButtonUp="ChartPanEvent">
+                                                        DisableAnimations ="True" Hoverable="False" AllowDrop="False" DataTooltip="{x:Null}" Focusable="True" MouseWheel="DimChartZoomEvent"
+                                                        MouseLeftButtonDown="DimChartPanEvent" MouseLeftButtonUp="DimChartPanEvent">
                                         <lvc:CartesianChart.CacheMode>
                                             <BitmapCache EnableClearType="False" 
                                                         RenderAtScale="1"
@@ -173,6 +177,16 @@
                                             <lvc:Axis Title="Boyut (B)" FontSize="16" Foreground="White" DisableAnimations ="True"/>
                                         </lvc:CartesianChart.AxisY>
                                     </lvc:CartesianChart>
+                                    <StackPanel Loaded="DimLabelStackLoaded" HorizontalAlignment="Center" Orientation="Horizontal">
+                                        <StackPanel >
+                                            <Label  HorizontalContentAlignment="Center" Width="500" FontWeight="Bold" Foreground="Black" Background="Transparent" FontSize="14"/>
+                                            <Label  HorizontalContentAlignment="Center" Width="500" FontWeight="Bold" Foreground="Black" Background="Transparent" FontSize="14"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="50,0,0,0">
+                                            <Label  HorizontalContentAlignment="Center" Width="500" FontWeight="Bold" Foreground="Black" Background="Transparent" FontSize="14"/>
+                                            <Label HorizontalContentAlignment="Center" Width="500" FontWeight="Bold" Foreground="Black" Background="Transparent" Margin="0,0,0,20" FontSize="14"/>
+                                        </StackPanel>
+                                    </StackPanel>
                                 </StackPanel>
                             </TabItem>
                         </TabControl>
@@ -181,7 +195,7 @@
                 <DataGrid.RowDetailsVisibilityMode>Collapsed</DataGrid.RowDetailsVisibilityMode>
 
             </DataGrid>
-            <ProgressBar x:Name="progressBar" Visibility="Collapsed" Height="20" Width ="150" Margin="0,0,0,10" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
+            <ProgressBar x:Name="progressBar" Visibility="Collapsed" Height="20" Width ="150" Margin="0,0,-32,0" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
             <Label x:Name="exportLabel" Content="Tablo Dışarı Aktarıldı." Margin="0,0,0,3" HorizontalAlignment="Right" Width="130" Height="26"  
                    VerticalAlignment="Bottom" FontWeight="Bold" Foreground="White" Visibility="Collapsed"/>
 

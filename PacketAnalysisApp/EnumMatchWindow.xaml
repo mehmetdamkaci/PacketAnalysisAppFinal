@@ -40,7 +40,19 @@
                 <TextBlock Text="Değerleri" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Grid>
         </Button>
-        <Button x:Name="enumlarButton" Content="Enumlar" HorizontalAlignment="Left" Height="70" Margin="210,132,0,0" VerticalAlignment="Top"  Click="OKClick" 
+        <Button x:Name="beklenenBoyutButton" Height="72" FontWeight="Bold"  FontSize="14" Margin="210,146,0,425" HorizontalAlignment="Left" Width="164" Click="BeklenenBoyutClicked">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="Beklenen"  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <TextBlock Text="Boyut" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <TextBlock Text="Değerleri" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+        </Button>
+        <Button x:Name="enumlarButton" Content="Enumlar" HorizontalAlignment="Left" Height="70" Margin="210,251,0,0" VerticalAlignment="Top"  Click="OKClick" 
                 FontWeight="Bold" FontSize="14" Width="164"/>
     </Grid>
 </Window>
