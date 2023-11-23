@@ -13,7 +13,9 @@
         <local:KeyValueConverterDim x:Key="KeyValueConverterDim"/>
     </Window.Resources>
 
+    
     <Grid  x:Name="mainGrid" Margin="54,36,41,10">
+        
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"></ColumnDefinition>
             <ColumnDefinition Width="*"/>

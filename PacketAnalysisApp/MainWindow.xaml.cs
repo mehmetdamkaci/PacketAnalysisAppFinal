@@ -19,13 +19,14 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Shell;
 using System.Windows.Threading;
 
 namespace PacketAnalysisApp
 {
     public partial class MainWindow : Window
     {
-        int saveLength = 600;
+        int saveLength = 120;
         DataKeeper dataKeeper = new DataKeeper();
         Export export = new Export();
 
@@ -106,7 +107,7 @@ namespace PacketAnalysisApp
         public MainWindow()
         {                        
             InitializeComponent();
-            
+
             exportButton.IsEnabled = false;
             startConnect = true;
             disconnectButton.IsEnabled = false;
@@ -124,6 +125,7 @@ namespace PacketAnalysisApp
 
             pieChart.DataTooltip = null;
         }
+
 
         private void ExpectedDimClicked(object sender, RoutedEventArgs e)
         {
@@ -187,9 +189,9 @@ namespace PacketAnalysisApp
         }
 
         //Grafikleri Dışarı aktarma fonksiyonu
-        private void dimExportChartButtonClick(object sender, RoutedEventArgs e)
+        private async void dimExportChartButtonClick(object sender, RoutedEventArgs e)
         {
-            Thread.Sleep(20);
+            await Task.Delay(100);
             dataGrid.Dispatcher.Invoke(new Action(() =>
             {
                 var selecteItem = dataGrid.SelectedItem;
@@ -261,7 +263,8 @@ namespace PacketAnalysisApp
 
         public void exportAll()
         {
-            for(int i = 0; i < totalReceivedPacket.Count; i++)
+
+            for (int i = 0; i < totalReceivedPacket.Count; i++)
             {
                 string fileName = totalReceivedPacket.ElementAt(i).Key[0] + "_" + totalReceivedPacket.ElementAt(i).Key[1];
                 dataKeeper.writeData("FREKANS", fileName, lineValuesList.ElementAt(i).Value.ToList<int>(), chartXLabels.ToList<string>());
@@ -270,7 +273,9 @@ namespace PacketAnalysisApp
                 dataKeeper.writeData("BOYUT", fileName, dimLineValuesList.ElementAt(i).Value.ToList<int>(), dimChartXLabels.ElementAt(i).Value.ToList<string>());
                 dimLineValuesList.ElementAt(i).Value.Clear();
                 dimChartXLabels.ElementAt(i).Value.Clear();
-            } chartXLabels.Clear();
+            }
+            chartXLabels.Clear();
+
         }
         
         private void exportClick(object sender, RoutedEventArgs e)
@@ -285,8 +290,10 @@ namespace PacketAnalysisApp
                     progressBar.Visibility = Visibility.Visible;
 
                     Microsoft.Win32.SaveFileDialog openFileDlg = new Microsoft.Win32.SaveFileDialog();
-                    Nullable<bool> result = openFileDlg.ShowDialog();
+                    openFileDlg.FileName = enumMatchWindow.paketName + ".xlsx";
 
+                    Nullable<bool> result = openFileDlg.ShowDialog();
+                   
                     string savePath = "";
                     if (result == true)
                     {
@@ -294,7 +301,7 @@ namespace PacketAnalysisApp
                     }
                     else return;
                     if (savePath.Substring(savePath.LastIndexOf('.') + 1, 4) != "xlsx") savePath += ".xlsx";
-
+                                        
                     exportAll();
                     dataKeeper.mainExport(totalReceivedPacket, savePath, progressBar, exportButton, exportLabel);
                 }));

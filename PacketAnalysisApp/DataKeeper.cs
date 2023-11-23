@@ -208,19 +208,28 @@ namespace PacketAnalysisApp
             pieExcelSeries.Add(worksheetTable.Cells[2, 20, pieRow, 20], worksheetTable.Cells[2, 19, pieRow, 19]);
             Change_3DPieChart_Color(pieExcelChart, colors);
 
-            setTable("BOYUT", worksheetBoyut, worksheetBoyutChart, totalPacket, progressBar);
-            setTable("FREKANS", worksheetFrekans, worksheetChart, totalPacket, progressBar);
-
             worksheetBoyut.Cells.AutoFitColumns();
             worksheetTable.Cells.AutoFitColumns();
             worksheetFrekans.Cells.AutoFitColumns();
             worksheetBoyutChart.Cells.AutoFitColumns();
             worksheetChart.Cells.AutoFitColumns();
+            
+
+            await Task.Run(() =>
+            {
+                setTable("BOYUT", worksheetBoyut, worksheetBoyutChart, totalPacket, progressBar);
+                setTable("FREKANS", worksheetFrekans, worksheetChart, totalPacket, progressBar);
+            });
+
+
+
 
             if (new FileInfo(@savePath) != null)
             {
                 package.SaveAs(new FileInfo(@savePath));
             }
+
+            package.Dispose();
 
             await Task.Delay(1000);
             progressBar.Visibility = Visibility.Collapsed;
@@ -235,7 +244,8 @@ namespace PacketAnalysisApp
 
         public void setTable(string type, ExcelWorksheet valueSheet, ExcelWorksheet chartSheet, Dictionary<string[], int[]> totalPacket, ProgressBar progressBar)
         {
-            string typePath = (type == "BOYUT") ? dimPath : freqPath; 
+
+            string typePath = (type == "BOYUT") ? dimPath : freqPath;
             string paket = totalPacket.ElementAt(0).Key[0];
             int chartRow = 0;
             int chartColumn = 0;
@@ -258,10 +268,10 @@ namespace PacketAnalysisApp
                     row = 1;
                     while (!sr.EndOfStream)
                     {
-                        progressBar.Value += 1;
+                        //progressBar.Value += 1;
                         string[] data = sr.ReadLine().Split(',');
                         if (row > 1)
-                        {                            
+                        {
                             object value = null;
                             try
                             {
@@ -301,13 +311,14 @@ namespace PacketAnalysisApp
             {
                 for (int j = 1; j <= 15; j++)
                 {
-                    progressBar.Value += 1;
+                    //progressBar.Value += 1;
                     countChartRow++;
                     chartSheet.Cells[countChartRow, 1].Value = colors.ElementAt(i).Key;
                     chartSheet.Row(countChartRow).Style.Fill.PatternType = ExcelFillStyle.Solid;
                     chartSheet.Row(countChartRow).Style.Fill.BackgroundColor.SetColor(ColorConverter(colors[colors.ElementAt(i).Key]));
                 }
             }
+
         }
 
         public async void readData(string type, string fileName, string savePath, StackPanel ExportPanel)
