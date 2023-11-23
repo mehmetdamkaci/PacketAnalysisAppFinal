@@ -207,27 +207,27 @@ namespace PacketAnalysisApp
             pieExcelChart.SetPosition((pieRow + colors.Count + 3) * 10, 19 * 15 + 800);
             pieExcelSeries.Add(worksheetTable.Cells[2, 20, pieRow, 20], worksheetTable.Cells[2, 19, pieRow, 19]);
             Change_3DPieChart_Color(pieExcelChart, colors);
-
-            worksheetBoyut.Cells.AutoFitColumns();
-            worksheetTable.Cells.AutoFitColumns();
-            worksheetFrekans.Cells.AutoFitColumns();
-            worksheetBoyutChart.Cells.AutoFitColumns();
-            worksheetChart.Cells.AutoFitColumns();
-            
-
+          
             await Task.Run(() =>
             {
                 setTable("BOYUT", worksheetBoyut, worksheetBoyutChart, totalPacket, progressBar);
                 setTable("FREKANS", worksheetFrekans, worksheetChart, totalPacket, progressBar);
             });
 
+            worksheetBoyut.Cells.AutoFitColumns();
+            worksheetTable.Cells.AutoFitColumns();
+            worksheetFrekans.Cells.AutoFitColumns();
+            worksheetBoyutChart.Cells.AutoFitColumns();
+            worksheetChart.Cells.AutoFitColumns();
 
-
-
-            if (new FileInfo(@savePath) != null)
+            if(savePath != null)
             {
-                package.SaveAs(new FileInfo(@savePath));
+                if (new FileInfo(@savePath) != null)
+                {
+                    package.SaveAs(new FileInfo(@savePath));
+                }
             }
+
 
             package.Dispose();
 

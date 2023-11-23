@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:PacketAnalysisApp"
         xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf" 
         WindowStartupLocation="CenterScreen" Width="1080" Height="720"
-        AllowsTransparency="False" Background="#333333" Closed="MainAppClosed">
+        AllowsTransparency="False" Background="#333333" Closed="MainAppClosed" Closing="MainAppClosing">
 
     <Window.Resources>
         <local:KeyValueConverterFreq x:Key="KeyValueConverterFreq" />

@@ -4,8 +4,10 @@ using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Data;
 using System.IO;
 using System.Linq;
@@ -31,6 +33,8 @@ namespace PacketAnalysisApp
         Export export = new Export();
 
         string paket = "";
+
+        bool closing = true;
 
         byte[] Key = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20 };
         byte[] IV = new byte[] { 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30 };
@@ -275,41 +279,56 @@ namespace PacketAnalysisApp
                 dimChartXLabels.ElementAt(i).Value.Clear();
             }
             chartXLabels.Clear();
-
+            
         }
         
         private void exportClick(object sender, RoutedEventArgs e)
         {
             dataKeeper.colors = rowColor;
+            string savePath = null;
 
-            Task.Run(() =>
+            dataGrid.Dispatcher.Invoke(new Action(() =>
             {
-                dataGrid.Dispatcher.Invoke(new Action(() =>
+                Microsoft.Win32.SaveFileDialog openFileDlg = new Microsoft.Win32.SaveFileDialog();
+                openFileDlg.FileName = enumMatchWindow.paketName + ".xlsx";
+
+                Nullable<bool> result = openFileDlg.ShowDialog();
+
+                if (result == true)
                 {
                     exportButton.Visibility = Visibility.Collapsed;
                     progressBar.Visibility = Visibility.Visible;
 
-                    Microsoft.Win32.SaveFileDialog openFileDlg = new Microsoft.Win32.SaveFileDialog();
-                    openFileDlg.FileName = enumMatchWindow.paketName + ".xlsx";
-
-                    Nullable<bool> result = openFileDlg.ShowDialog();
-                   
-                    string savePath = "";
-                    if (result == true)
+                    savePath = openFileDlg.FileName;
+                    Task.Run(() =>
                     {
-                        savePath = openFileDlg.FileName;
-                    }
-                    else return;
-                    if (savePath.Substring(savePath.LastIndexOf('.') + 1, 4) != "xlsx") savePath += ".xlsx";
-                                        
-                    exportAll();
-                    dataKeeper.mainExport(totalReceivedPacket, savePath, progressBar, exportButton, exportLabel);
-                }));
-            });
+                        dataGrid.Dispatcher.Invoke(() =>
+                        {
+                            if (savePath.Substring(savePath.LastIndexOf('.') + 1, 4) != "xlsx") savePath += ".xlsx";
+                            exportAll();
+                            dataKeeper.mainExport(totalReceivedPacket, savePath, progressBar, exportButton, exportLabel);
+                        });
+
+                    });
+                }
+                else return;
+                
+            }));
 
 
+
+            
 
             //export.MainExport(dataGrid, progressBar, totalReceivedPacket, rowColor, chartXLabels, lineValuesList, pieChartValues, exportButton, exportLabel, dimChartXLabels, dimLineValuesList);
+        }
+
+        private void exportTask(object savePath)
+        {
+            dataGrid.Dispatcher.Invoke(new Action(() =>
+            {
+                exportAll();
+                dataKeeper.mainExport(totalReceivedPacket, (string)savePath, progressBar, exportButton, exportLabel);
+            }));
         }
 
         private void BrowseExportButton(object sender, RoutedEventArgs e)
@@ -1312,6 +1331,15 @@ namespace PacketAnalysisApp
             subscriber.Abort();
             subSocket.Dispose();
             Environment.Exit(0);
+        }
+
+        private void MainAppClosing(object sender, CancelEventArgs e)
+        {
+            closing = true;
+            e.Cancel = true;
+
+            exportAll();
+            MainAppClosed(sender, e);
         }
 
         //Grafikteki ZOOM- butonuna tıklandığında oluşan event
