@@ -31,6 +31,8 @@ namespace PacketAnalysisApp
         public Dictionary<string, SolidColorBrush> colors;
         public List<string[]> fileNames = new List<string[]>();
 
+        public bool writeFinished = true;
+
         public void createFile(string path, string header)
         {
             if (fileNames.Count > 0)
@@ -80,7 +82,7 @@ namespace PacketAnalysisApp
         {
             var concatList = XValues.Zip(YValues, (time, value) => $"{time}, {value}");
             if (type == "FREKANS")
-            {
+            {                
                 File.AppendAllLines(Path.Combine(freqPath, fileName + extention), concatList);
             }
             else if (type == "BOYUT")
@@ -88,7 +90,18 @@ namespace PacketAnalysisApp
                 File.AppendAllLines(Path.Combine(dimPath, fileName + extention), concatList);
             }
         }
-
+        public void writeOneData(string type, string fileName, int YValues, string XValues)
+        {
+            var concatList = $"{XValues}, {YValues}\n";
+            if (type == "FREKANS")
+            {
+                File.AppendAllText(Path.Combine(freqPath, fileName + extention), concatList);
+            }
+            else if (type == "BOYUT")
+            {                
+                File.AppendAllText(Path.Combine(dimPath, fileName + extention), concatList);
+            }
+        }
         public void setCellStyle(ExcelWorksheet sheet, int row, int col, object value, SolidColorBrush background = null, 
                                  bool fontBold = false, SolidColorBrush borderBrush= null) 
         {            
@@ -124,6 +137,7 @@ namespace PacketAnalysisApp
         public async void mainExport(Dictionary<string[], int[]> totalPacket, string savePath, ProgressBar progressBar,
                                      Button exportButton, Label exportLabel)
         {
+            writeFinished = false;
             string initfileName = totalPacket.ElementAt(0).Key[0] + "_" + totalPacket.ElementAt(0).Key[1];
             progressBar.Maximum = File.ReadAllLines(Path.Combine(dimPath, initfileName + extention)).Length*totalPacket.Count*1.2;
             progressBar.Value = 0;
@@ -239,6 +253,8 @@ namespace PacketAnalysisApp
 
             exportLabel.Visibility = Visibility.Collapsed;
             exportButton.Visibility = Visibility.Visible;
+
+            writeFinished = true;
 
         }
 

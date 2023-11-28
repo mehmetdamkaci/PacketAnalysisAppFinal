@@ -18,6 +18,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -28,9 +29,10 @@ namespace PacketAnalysisApp
 {
     public partial class MainWindow : Window
     {
-        DataGridRow Row;
+        
+        bool writeFinished = false;
 
-        int saveLength = 120;
+        int saveLength = 20;
         DataKeeper dataKeeper = new DataKeeper();
         Export export = new Export();
 
@@ -74,7 +76,9 @@ namespace PacketAnalysisApp
         Dictionary<string[], CartesianChart> chartList = new Dictionary<string[], CartesianChart>();
         Dictionary<string[], LineSeries> lineSeriesList = new Dictionary<string[], LineSeries>();
         Dictionary<string[], ChartValues<int>> lineValuesList = new Dictionary<string[], ChartValues<int>>();
-        ObservableCollection<string> chartXLabels = new ObservableCollection<string>();
+        Dictionary<string[], ObservableCollection<string>> chartXLabels = new Dictionary<string[], ObservableCollection<string>>(new StringArrayComparer());
+        Dictionary<string[], ChartValues<int>> tempLineValuesList = new Dictionary<string[], ChartValues<int>>();
+        Dictionary<string[], ObservableCollection<string>> tempChartXLabels = new Dictionary<string[], ObservableCollection<string>>(new StringArrayComparer());
 
         Dictionary<string[], StackPanel> chartExportPanel = new Dictionary<string[], StackPanel>();
         Dictionary<string, string> chartStatuses = new Dictionary<string, string>();
@@ -87,6 +91,8 @@ namespace PacketAnalysisApp
         Dictionary<string[], LineSeries> dimLineSeriesList = new Dictionary<string[], LineSeries>(new StringArrayComparer());
         Dictionary<string[], ChartValues<int>> dimLineValuesList = new Dictionary<string[], ChartValues<int>>(new StringArrayComparer());
         Dictionary<string[], ObservableCollection<string>> dimChartXLabels = new Dictionary<string[], ObservableCollection<string>>(new StringArrayComparer());
+        Dictionary<string[], ChartValues<int>> tempDimLineValuesList = new Dictionary<string[], ChartValues<int>>(new StringArrayComparer());
+        Dictionary<string[], ObservableCollection<string>> tempDimChartXLabels = new Dictionary<string[], ObservableCollection<string>>(new StringArrayComparer());
 
         Dictionary<string, string> dimChartStatuses = new Dictionary<string, string>();
         Button dimZoomButton = new Button();
@@ -128,6 +134,8 @@ namespace PacketAnalysisApp
             expectedDim = enumMatchWindow.expectedDim;
             enumMatchWindow.ExpectedButtonClickedEvent += ExpectedFreqClicked;
             enumMatchWindow.ExpectedDimButtonClickedEvent += ExpectedDimClicked;
+
+            writeFinished = dataKeeper.writeFinished;
 
             pieChart.DataTooltip = null;
         }
@@ -225,16 +233,15 @@ namespace PacketAnalysisApp
                    
                     if (savePath.Substring(savePath.LastIndexOf('.') + 1, 4) != "xlsx") savePath += ".xlsx";
 
-                    dataKeeper.writeData("BOYUT", fileName, dimLineValuesList[selectedRow.Key].ToList<int>(), dimChartXLabels[selectedRow.Key].ToList<string>());
-                    dimLineValuesList[selectedRow.Key].Clear();
-                    dimChartXLabels[selectedRow.Key].Clear();
+                    //dataKeeper.writeData("BOYUT", fileName, dimLineValuesList[selectedRow.Key].ToList<int>(), dimChartXLabels[selectedRow.Key].ToList<string>());
+                    //dimLineValuesList[selectedRow.Key].Clear();
+                    //dimChartXLabels[selectedRow.Key].Clear();
                     dataKeeper.readData("BOYUT", fileName, savePath, dimChartExportPanel[selectedRow.Key]);
                 }
             }));
         }
         private void exportChartButtonClick(object sender, RoutedEventArgs e)
         {
-            Thread.Sleep(20);
             dataGrid.Dispatcher.Invoke(new Action(() =>
             {
                 var selecteItem = dataGrid.SelectedItem;
@@ -256,9 +263,9 @@ namespace PacketAnalysisApp
                     else return;
                     if (savePath.Substring(savePath.LastIndexOf('.') + 1, 4) != "xlsx") savePath += ".xlsx";
 
-                    dataKeeper.writeData("FREKANS", fileName, lineValuesList[selectedRow.Key].ToList<int>(), chartXLabels.ToList<string>());
-                    lineValuesList[selectedRow.Key].Clear();
-                    chartXLabels.Clear();
+                    //dataKeeper.writeData("FREKANS", fileName, lineValuesList[selectedRow.Key].ToList<int>(), chartXLabels[selectedRow.Key].ToList<string>());
+                    //lineValuesList[selectedRow.Key].Clear();
+                    //chartXLabels[selectedRow.Key].Clear();
                     dataKeeper.readData("FREKANS", fileName, savePath, chartExportPanel[selectedRow.Key]);
                 }
             }));            
@@ -273,15 +280,14 @@ namespace PacketAnalysisApp
             for (int i = 0; i < totalReceivedPacket.Count; i++)
             {
                 string fileName = totalReceivedPacket.ElementAt(i).Key[0] + "_" + totalReceivedPacket.ElementAt(i).Key[1];
-                dataKeeper.writeData("FREKANS", fileName, lineValuesList.ElementAt(i).Value.ToList<int>(), chartXLabels.ToList<string>());
+                dataKeeper.writeData("FREKANS", fileName, lineValuesList.ElementAt(i).Value.ToList<int>(), chartXLabels.ElementAt(i).Value.ToList<string>());
                 lineValuesList.ElementAt(i).Value.Clear();
+                chartXLabels.ElementAt(i).Value.Clear();
 
                 dataKeeper.writeData("BOYUT", fileName, dimLineValuesList.ElementAt(i).Value.ToList<int>(), dimChartXLabels.ElementAt(i).Value.ToList<string>());
                 dimLineValuesList.ElementAt(i).Value.Clear();
                 dimChartXLabels.ElementAt(i).Value.Clear();
-            }
-            chartXLabels.Clear();
-            
+            }            
         }
         
         private void exportClick(object sender, RoutedEventArgs e)
@@ -307,7 +313,7 @@ namespace PacketAnalysisApp
                         dataGrid.Dispatcher.Invoke(() =>
                         {
                             if (savePath.Substring(savePath.LastIndexOf('.') + 1, 4) != "xlsx") savePath += ".xlsx";
-                            exportAll();
+                            //exportAll();
                             dataKeeper.mainExport(totalReceivedPacket, savePath, progressBar, exportButton, exportLabel);
                         });
 
@@ -316,11 +322,6 @@ namespace PacketAnalysisApp
                 else return;
                 
             }));
-
-
-
-            
-
             //export.MainExport(dataGrid, progressBar, totalReceivedPacket, rowColor, chartXLabels, lineValuesList, pieChartValues, exportButton, exportLabel, dimChartXLabels, dimLineValuesList);
         }
 
@@ -466,10 +467,10 @@ namespace PacketAnalysisApp
             {
                 dataGrid.Dispatcher.Invoke(new Action(() =>
                 {
-                    //var selecteItem = dataGrid.SelectedItem;
-                    if (Row != null)
+                    var selecteItem = dataGrid.SelectedItem;
+                    if (selecteItem != null)
                     {                        
-                        KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)Row.Item;
+                        KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)selecteItem;
                         chartExportPanel[selectedRow.Key] = sender as StackPanel;
                         chartExportPanel[selectedRow.Key].Children[1].Visibility = Visibility.Collapsed;
                         chartExportPanel[selectedRow.Key].Children[2].Visibility = Visibility.Collapsed;
@@ -501,8 +502,6 @@ namespace PacketAnalysisApp
 
         private void zoomButtonLoaded(object sender, RoutedEventArgs e)
         {
-            Button btn = sender as Button;
-            btn.Click += zoomButton_Click;
             //zoomButton = sender as Button;
         }
 
@@ -532,7 +531,8 @@ namespace PacketAnalysisApp
             chartList = new Dictionary<string[], CartesianChart>(new StringArrayComparer());
             lineSeriesList = new Dictionary<string[], LineSeries>();
             lineValuesList = new Dictionary<string[], ChartValues<int>>(new StringArrayComparer());
-            chartXLabels = new ObservableCollection<string>();
+            chartXLabels = new Dictionary<string[], ObservableCollection<string>>(new StringArrayComparer());
+            tempChartXLabels = new Dictionary<string[], ObservableCollection<string>>(new StringArrayComparer());
             chartStatuses = new Dictionary<string, string>();
             paketButtons = new Dictionary<string, Button>();
             totalReceivedPacket = new Dictionary<string[], int[]>(new StringArrayComparer());
@@ -541,6 +541,8 @@ namespace PacketAnalysisApp
             dimLineSeriesList = new Dictionary<string[], LineSeries>(new StringArrayComparer());
             dimLineValuesList = new Dictionary<string[], ChartValues<int>>(new StringArrayComparer());
             dimChartXLabels = new Dictionary<string[], ObservableCollection<string>>(new StringArrayComparer());
+            tempDimLineValuesList = new Dictionary<string[], ChartValues<int>>(new StringArrayComparer());
+            tempDimChartXLabels = new Dictionary<string[], ObservableCollection<string>>(new StringArrayComparer());
             dimChartStatuses = new Dictionary<string, string>();
 
             for (int i = 0; i < enumStruct[enumMatchWindow.paketName].Count; i++)
@@ -589,13 +591,18 @@ namespace PacketAnalysisApp
                     chartList.Add(paket_proje, new CartesianChart());
                     lineSeriesList.Add(paket_proje, new LineSeries());
                     lineValuesList.Add(paket_proje, new ChartValues<int>());
+                    tempLineValuesList.Add(paket_proje, new ChartValues<int>());
                     chartStatuses.Add(paket_proje[0] + "_" + paket_proje[1], "DEFAULT");
                     chartExportPanel.Add(paket_proje, new StackPanel());
-                    
+                    chartXLabels.Add(paket_proje, new ObservableCollection<string>());
+                    tempChartXLabels.Add(paket_proje, new ObservableCollection<string>());
+
                     dimChartList.Add(paket_proje, new CartesianChart());
                     dimLineSeriesList.Add(paket_proje, new LineSeries());
                     dimLineValuesList.Add(paket_proje, new ChartValues<int>());
+                    tempDimLineValuesList.Add(paket_proje, new ChartValues<int>());
                     dimChartXLabels.Add(paket_proje, new ObservableCollection<string>());
+                    tempDimChartXLabels.Add(paket_proje, new ObservableCollection<string>());
                     dimChartStatuses.Add(paket_proje[0] + "_" + paket_proje[1], "DEFAULT");
                     dimChartExportPanel.Add(paket_proje, new StackPanel());
 
@@ -603,7 +610,6 @@ namespace PacketAnalysisApp
                     expectedFreqBoxs.Add(paket_proje, new TextBox());
                     dimLabelStacks.Add(paket_proje, new StackPanel());
                     expectedDimBoxs.Add(paket_proje, new TextBox());
-
                 }
             }
 
@@ -621,15 +627,9 @@ namespace PacketAnalysisApp
         //Bir saniyede bir tabloyu ve frekans değerlerini güncelleyen fonksiyon
         private void UpdateFrekans(object sender, EventArgs e)
         {
-            bool dataKeep = false;
+            
             Task.Run(() =>
-            {
-                chartXLabels.Add(DateTime.Now.ToString("HH:mm:ss"));
-                
-                if(chartXLabels.Count == saveLength)
-                {
-                    dataKeep = true;
-                }
+            {                
                 for (int i = 0; i < totalReceivedPacket.Count; i++)
                 {
                     string[] paket_proje = totalReceivedPacket.Keys.ElementAt(i);
@@ -649,24 +649,55 @@ namespace PacketAnalysisApp
                         totalReceivedPacket[paket_proje][0] = currentTotal - privTotal[i];
                         privTotal[i] = currentTotal;
 
-                        lineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Add(totalReceivedPacket[paket_proje][0]);
-                        lineSeriesList[totalReceivedPacket.Keys.ElementAt(i)].Values = lineValuesList[totalReceivedPacket.Keys.ElementAt(i)];
+                        //if (dataKeep)
+                        //{                            
+                        //    string fileName = paket_proje[0] + "_" + paket_proje[1];
+                        //    dataKeeper.writeData("FREKANS", fileName, lineValuesList[paket_proje].ToList<int>(), chartXLabels.ToList<string>());
+                        //    lineValuesList[paket_proje].Clear();                                                            
+                        //}
 
-                        if (dataKeep)
-                        {                            
-                            string fileName = paket_proje[0] + "_" + paket_proje[1];
-                            dataKeeper.writeData("FREKANS", fileName, lineValuesList[paket_proje].ToList<int>(), chartXLabels.ToList<string>());
-                            lineValuesList[paket_proje].Clear();                                                            
+                        string fileName = paket_proje[0] + "_" + paket_proje[1];
+
+                        if (dataKeeper.writeFinished)
+                        {
+
+                            dataKeeper.writeData("FREKANS", fileName, tempLineValuesList[paket_proje].ToList(), tempChartXLabels[paket_proje].ToList());
+                            tempChartXLabels[paket_proje].Clear();
+                            tempLineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Clear();
+
+                            if (lineValuesList[paket_proje].Count == saveLength)
+                            {
+                                dataKeeper.writeOneData("FREKANS", fileName, lineValuesList[paket_proje].Last(), chartXLabels[paket_proje].Last());
+                                lineValuesList[paket_proje].RemoveAt(0);
+                                chartXLabels[paket_proje].RemoveAt(0);
+
+                                chartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss"));
+                                lineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Add(totalReceivedPacket[paket_proje][0]);
+                                lineSeriesList[totalReceivedPacket.Keys.ElementAt(i)].Values = lineValuesList[totalReceivedPacket.Keys.ElementAt(i)];
+                            }
+                            else
+                            {
+                                chartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss"));
+                                lineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Add(totalReceivedPacket[paket_proje][0]);
+                                lineSeriesList[totalReceivedPacket.Keys.ElementAt(i)].Values = lineValuesList[totalReceivedPacket.Keys.ElementAt(i)];
+                                dataKeeper.writeOneData("FREKANS", fileName, lineValuesList[paket_proje].Last(), chartXLabels[paket_proje].Last());
+                            }
                         }
-                        
+                        else
+                        {
+                            tempChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss"));
+                            tempLineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Add(totalReceivedPacket[paket_proje][0]);
+                        }
+
+
+
                         setChartStatues(chartList[totalReceivedPacket.Keys.ElementAt(i)], lineValuesList[totalReceivedPacket.Keys.ElementAt(i)],
-                                        chartXLabels, chartStatuses[paket_proje[0] + "_" + paket_proje[1]]);
+                                        chartXLabels[paket_proje], chartStatuses[paket_proje[0] + "_" + paket_proje[1]]);
 
                         setChartStatues(dimChartList[paket_proje], dimLineValuesList[paket_proje],
                                         dimChartXLabels[paket_proje], dimChartStatuses[paket_proje[0] + "_" + paket_proje[1]]);
                     }));
                 }
-                if(dataKeep) { chartXLabels.Clear(); }
             });
         }
 
@@ -709,13 +740,13 @@ namespace PacketAnalysisApp
                                     chart.AxisY[0].MaxValue = value.Max() + 1) :
                                     chart.AxisY[0].MaxValue = value.Max() + 1;
 
+                                chart.AxisX[0].MinValue = 0;
+                                chart.AxisX[0].MaxValue = saveLength - 1;
+
                                 chart.Zoom = ZoomingOptions.X;
                                 chart.Pan = PanningOptions.X;
-                            }
-
-                        }));
-
-                        
+                            }                            
+                        }));                        
                         break;
                 }
             }
@@ -943,11 +974,11 @@ namespace PacketAnalysisApp
             //expectedFreq = enumMatchWindow.expectedFreq;            
             dataGrid.Dispatcher.Invoke(new Action(() =>
             {
-
+                var selecteItem = dataGrid.SelectedItem;
                 //var selecteItem = dataGrid.SelectedItem;
-                if (Row != null)
+                if (selecteItem != null)
                 {
-                    KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)Row.Item;
+                    KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)selecteItem;
                     chartList[selectedRow.Key] = sender as CartesianChart;
                     if (!freqExceptAdded)
                     {
@@ -968,7 +999,7 @@ namespace PacketAnalysisApp
                     chartList[selectedRow.Key].Name = selectedRow.Key.ElementAt(0) + "_" + selectedRow.Key.ElementAt(1);
                     chartList[selectedRow.Key].Height = 200;
                     chartList[selectedRow.Key].Series = new SeriesCollection { lineSeriesList[selectedRow.Key] };
-                    chartList[selectedRow.Key].AxisX[0].Labels = chartXLabels;
+                    chartList[selectedRow.Key].AxisX[0].Labels = chartXLabels[selectedRow.Key];
 
                 }
             }));            
@@ -999,10 +1030,10 @@ namespace PacketAnalysisApp
             
             dataGrid.Dispatcher.Invoke(new Action(() =>
             {
-                Row = FindAncestor<DataGridRow>(detayClicked);
-                if (Row != null)
-                {
-                    KeyValuePair<string[], int[]> a = (KeyValuePair<string[], int[]>)Row.Item;
+                var selecteItem = dataGrid.SelectedItem;
+                if (selecteItem != null)
+                {                    
+                    KeyValuePair<string[], int[]> a = (KeyValuePair<string[], int[]>)selecteItem;
                     row = (DataGridRow)dataGrid.ItemContainerGenerator.ContainerFromItem(a);
                     if (row.DetailsVisibility != Visibility.Visible) row.DetailsVisibility = Visibility.Visible;
                     else row.DetailsVisibility = Visibility.Collapsed;                   
@@ -1075,7 +1106,6 @@ namespace PacketAnalysisApp
             timer.Interval = TimeSpan.FromMilliseconds(1000);
             timer.Tick += UpdateFrekans;
             timer.Start();
-
         }
 
         //Hücreleri bulmayı sağlayan fonksiyon
@@ -1275,6 +1305,36 @@ namespace PacketAnalysisApp
             }
         }
 
+        public ChartValues<T> ShiftListY<T>(ChartValues<T> list, int shiftAmount)
+        {
+            int actualShift = shiftAmount % list.Count;
+
+            if (actualShift < 0)
+                actualShift += list.Count;
+
+            List<T> shiftedList = list.ToList().GetRange(actualShift, list.Count - actualShift);
+            shiftedList.AddRange(list.ToList().GetRange(0, actualShift));
+
+            list.Clear();
+            list.AddRange(shiftedList);
+            return list;
+        }
+
+        public ObservableCollection<T> ShiftListX<T>(ObservableCollection<T> list, int shiftAmount)
+        {
+            int actualShift = shiftAmount % list.Count;            
+
+            if (actualShift < 0)
+                actualShift += list.Count;
+
+            List<T> shiftedList = list.ToList().GetRange(actualShift, list.Count - actualShift);
+            shiftedList.AddRange(list.ToList().GetRange(0, actualShift));
+
+            list.Clear();
+            list.ToList().AddRange(shiftedList);
+            return new ObservableCollection<T>(list.ToList()); 
+        }
+
         //Paketlerin alındığı fonksiyon bir thread'te çalışır
         public void receiveData()
         {
@@ -1300,16 +1360,46 @@ namespace PacketAnalysisApp
                     setExpectedLabel(paket_proje, lineValuesList, freqLabelStacks, expectedFreq, "Frekans");
                     setExpectedLabel(paket_proje, dimLineValuesList, dimLabelStacks, expectedDim, "Boyut");
 
-                    dimLineValuesList[paket_proje].Add(bytes.Length);
-                    dimLineSeriesList[paket_proje].Values = dimLineValuesList[paket_proje];
-                    dimChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss:fff"));
+                    string fileName = paket_proje[0] + "_" + paket_proje[1];
 
-                    if (dimLineValuesList[paket_proje].Count == saveLength)
+                    
+                    //dimLineValuesList[paket_proje].Add(bytes.Length);
+                    //dimLineSeriesList[paket_proje].Values = dimLineValuesList[paket_proje];
+                    //dimChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss:fff"));
+
+                    if (dataKeeper.writeFinished)
                     {
-                        string fileName = paket_proje[0] + "_" + paket_proje[1];
-                        dataKeeper.writeData("BOYUT", fileName, dimLineValuesList[paket_proje].ToList<int>(), dimChartXLabels[paket_proje].ToList<string>());
-                        dimLineValuesList[paket_proje].Clear();
-                        dimChartXLabels[paket_proje].Clear();
+                        //if (tempDimChartXLabels[paket_proje].Count > 0)
+                        //{
+
+                        //}
+                        dataKeeper.writeData("BOYUT", fileName, tempDimLineValuesList[paket_proje].ToList(), tempDimChartXLabels[paket_proje].ToList());
+                        tempDimChartXLabels[paket_proje].Clear();
+                        tempDimLineValuesList[paket_proje].Clear();
+
+                        if (dimLineValuesList[paket_proje].Count == saveLength)
+                        {
+                            dataKeeper.writeOneData("BOYUT", fileName, dimLineValuesList[paket_proje].Last(), dimChartXLabels[paket_proje].Last());
+
+                            dimChartXLabels[paket_proje].RemoveAt(0);
+                            dimLineValuesList[paket_proje].RemoveAt(0);
+
+                            dimLineValuesList[paket_proje].Add(bytes.Length);
+                            dimChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss:fff"));
+
+                        }
+                        else
+                        {
+                            dimLineValuesList[paket_proje].Add(bytes.Length);
+                            dimLineSeriesList[paket_proje].Values = dimLineValuesList[paket_proje];
+                            dimChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss:fff"));
+                            dataKeeper.writeOneData("BOYUT", fileName, dimLineValuesList[paket_proje].Last(), dimChartXLabels[paket_proje].Last());
+                        }
+                    }
+                    else
+                    {
+                        tempDimChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss:fff"));
+                        tempDimLineValuesList[paket_proje].Add(bytes.Length);
                     }
 
                     if (rowColorStart & dataGrid.Items.Count == totalReceivedPacket.Count)
