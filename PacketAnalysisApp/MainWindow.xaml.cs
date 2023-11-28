@@ -28,6 +28,8 @@ namespace PacketAnalysisApp
 {
     public partial class MainWindow : Window
     {
+        DataGridRow Row;
+
         int saveLength = 120;
         DataKeeper dataKeeper = new DataKeeper();
         Export export = new Export();
@@ -464,10 +466,10 @@ namespace PacketAnalysisApp
             {
                 dataGrid.Dispatcher.Invoke(new Action(() =>
                 {
-                    var selecteItem = dataGrid.SelectedItem;
-                    if (selecteItem != null)
+                    //var selecteItem = dataGrid.SelectedItem;
+                    if (Row != null)
                     {                        
-                        KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)selecteItem;
+                        KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)Row.Item;
                         chartExportPanel[selectedRow.Key] = sender as StackPanel;
                         chartExportPanel[selectedRow.Key].Children[1].Visibility = Visibility.Collapsed;
                         chartExportPanel[selectedRow.Key].Children[2].Visibility = Visibility.Collapsed;
@@ -499,7 +501,9 @@ namespace PacketAnalysisApp
 
         private void zoomButtonLoaded(object sender, RoutedEventArgs e)
         {
-            zoomButton = sender as Button;
+            Button btn = sender as Button;
+            btn.Click += zoomButton_Click;
+            //zoomButton = sender as Button;
         }
 
         private void realButtonLoaded(object sender, RoutedEventArgs e)
@@ -842,6 +846,7 @@ namespace PacketAnalysisApp
             enumMatchWindow.Show();
         }
 
+
         //Frekans grafikleri yüklendiğinde oluşan event
         private void LoadDimChart(object sender, RoutedEventArgs e)
         {
@@ -938,10 +943,11 @@ namespace PacketAnalysisApp
             //expectedFreq = enumMatchWindow.expectedFreq;            
             dataGrid.Dispatcher.Invoke(new Action(() =>
             {
-                var selecteItem = dataGrid.SelectedItem;
-                if (selecteItem != null)
+
+                //var selecteItem = dataGrid.SelectedItem;
+                if (Row != null)
                 {
-                    KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)selecteItem;
+                    KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)Row.Item;
                     chartList[selectedRow.Key] = sender as CartesianChart;
                     if (!freqExceptAdded)
                     {
@@ -969,17 +975,34 @@ namespace PacketAnalysisApp
         }
 
         //Detay butonuna tıklandığında oluşan event
+
+        private static T FindAncestor<T>(DependencyObject current)
+            where T : DependencyObject
+        {
+            do
+            {
+                if (current is T ancestor)
+                {
+                    return ancestor;
+                }
+                current = VisualTreeHelper.GetParent(current);
+            } while (current != null);
+            return null;
+        }
+
         public void ButtonDetayClicked(object sender, RoutedEventArgs e)
         {
             dimExceptAdded = false;
             freqExceptAdded = false;
 
+            Button detayClicked = sender as Button;
+            
             dataGrid.Dispatcher.Invoke(new Action(() =>
             {
-                DataGridRow selectedRow = (DataGridRow)dataGrid.ItemContainerGenerator.ContainerFromItem(dataGrid.SelectedItem);
-                if (selectedRow != null)
+                Row = FindAncestor<DataGridRow>(detayClicked);
+                if (Row != null)
                 {
-                    KeyValuePair<string[], int[]> a = (KeyValuePair<string[], int[]>)selectedRow.Item;
+                    KeyValuePair<string[], int[]> a = (KeyValuePair<string[], int[]>)Row.Item;
                     row = (DataGridRow)dataGrid.ItemContainerGenerator.ContainerFromItem(a);
                     if (row.DetailsVisibility != Visibility.Visible) row.DetailsVisibility = Visibility.Visible;
                     else row.DetailsVisibility = Visibility.Collapsed;                   
@@ -1264,15 +1287,16 @@ namespace PacketAnalysisApp
 
                 string[] paket_proje = new string[] { enumStruct[paketName].Values.ElementAt((int)bytes[paketByte]),
                                             enumStruct[enumStruct[paketName].Values.ElementAt((int)bytes[paketByte])].Values.ElementAt((int)bytes[projeByte]) };
-    
+
+                int a = totalReceivedPacket.Keys.ToList().IndexOf(paket_proje);
+
                 totalReceivedPacket[paket_proje][1] += 1;
                 totalReceivedPacket[paket_proje][2] = bytes.Length;
                 totalReceivedPacket[paket_proje][3] += bytes.Length;
-                
+
                 int total = 0;
                 dataGrid.Dispatcher.Invoke(new System.Action(() =>
                 {
-
                     setExpectedLabel(paket_proje, lineValuesList, freqLabelStacks, expectedFreq, "Frekans");
                     setExpectedLabel(paket_proje, dimLineValuesList, dimLabelStacks, expectedDim, "Boyut");
 
@@ -1345,7 +1369,6 @@ namespace PacketAnalysisApp
         //Grafikteki ZOOM- butonuna tıklandığında oluşan event
         private void dimZoomButton_Click(object sender, RoutedEventArgs e)
         {
-            Thread.Sleep(20);
             dataGrid.Dispatcher.Invoke(new Action(() =>
             {
                 var selecteItem = dataGrid.SelectedItem;
@@ -1359,7 +1382,6 @@ namespace PacketAnalysisApp
         //Grafikteki REAL butonuna tıklandığında oluşan event
         private void dimRealButton_Click(object sender, RoutedEventArgs e)
         {
-            Thread.Sleep(20);
             dataGrid.Dispatcher.Invoke(new Action(() =>
             {
                 var selecteItem = dataGrid.SelectedItem;
@@ -1373,21 +1395,21 @@ namespace PacketAnalysisApp
 
         private void zoomButton_Click(object sender, RoutedEventArgs e)
         {
-            Thread.Sleep(20);
-            dataGrid.Dispatcher.Invoke(new Action(() =>
+            Button zoomClicked = (Button)sender;
+            DataGridRow row = FindAncestor<DataGridRow>(zoomClicked);
+
+            var selecteItem = dataGrid.SelectedItem;
+            if (row != null)
             {
-                var selecteItem = dataGrid.SelectedItem;
-                if (selecteItem != null)
-                {
-                    KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)selecteItem;
-                    chartStatuses[selectedRow.Key.ElementAt(0) + "_" + selectedRow.Key.ElementAt(1)] = "ZOOM-";
-                }
-            }));
+                KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)row.Item;
+                chartStatuses[selectedRow.Key.ElementAt(0) + "_" + selectedRow.Key.ElementAt(1)] = "ZOOM-";
+            }
+            else MessageBox.Show("row null");
+
         }
         //Grafikteki REAL butonuna tıklandığında oluşan event
         private void realButton_Click(object sender, RoutedEventArgs e)
         {
-            Thread.Sleep(20);
             dataGrid.Dispatcher.Invoke(new Action(() =>
             {
                 var selecteItem = dataGrid.SelectedItem;

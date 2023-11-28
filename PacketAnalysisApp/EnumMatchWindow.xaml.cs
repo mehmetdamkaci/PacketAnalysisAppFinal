@@ -1320,7 +1320,7 @@ namespace PacketAnalysisApp
                     }
                 }
                 Dictionary<string, int> tempFreq = new Dictionary<string, int>();
-
+                
                 for (int i = 0; i < expectedFreq.Count; i++)
                 {
                     expectedFreq[expectedFreq.ElementAt(i).Key] = Convert.ToInt32(expectedTextBoxList[expectedFreq.ElementAt(i).Key].Text);
@@ -1399,7 +1399,7 @@ namespace PacketAnalysisApp
                 }
 
                 Dictionary<string, int> tempFreq = new Dictionary<string, int>();
-                for (int i = 0; i < expectedDim.Count; i++)
+                for (int i = 0; i < expectedFreq.Count; i++)
                 {
                     expectedFreq[expectedFreq.ElementAt(i).Key] = Convert.ToInt32(expectedTextBoxList[expectedFreq.ElementAt(i).Key].Text);
                     tempFreq.Add(expectedFreq.ElementAt(i).Key[0] + "." + expectedFreq.ElementAt(i).Key[1], expectedFreq.ElementAt(i).Value);

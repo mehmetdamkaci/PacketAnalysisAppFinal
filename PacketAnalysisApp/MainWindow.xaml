@@ -58,7 +58,7 @@
             <DataGrid Name="dataGrid" AutoGenerateColumns="False" Background="#FF696969" AlternatingRowBackground="LightGray" AlternationCount="2"
                       ItemsSource="{Binding Path=Packets}" SelectedItem="{Binding Path=paketID}" IsReadOnly="True" BorderThickness="0" 
                       CellStyle="{StaticResource Body_Content_DataGrid_Centering}" Margin="32,-32,-32,34" SelectionUnit="FullRow"
-                      VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.ScrollUnit="Item" EnableRowVirtualization="False"
+                      VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Item" EnableRowVirtualization="False"
                       CanUserSortColumns="False">
 
                 <DataGrid.Resources>
