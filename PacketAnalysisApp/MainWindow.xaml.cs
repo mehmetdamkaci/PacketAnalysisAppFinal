@@ -21,9 +21,11 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Shell;
 using System.Windows.Threading;
+using WpfAnimatedGif;
 
 namespace PacketAnalysisApp
 {
@@ -33,6 +35,7 @@ namespace PacketAnalysisApp
         bool writeFinished = false;
 
         int saveLength = 20;
+        int tempLength = 20;
         DataKeeper dataKeeper = new DataKeeper();
         Export export = new Export();
 
@@ -304,24 +307,29 @@ namespace PacketAnalysisApp
 
                 if (result == true)
                 {
+                    writeFinished = false;
                     exportButton.Visibility = Visibility.Collapsed;
-                    progressBar.Visibility = Visibility.Visible;
+                    loading.Visibility = Visibility.Visible;
 
                     savePath = openFileDlg.FileName;
                     Task.Run(() =>
                     {
+                        
                         dataGrid.Dispatcher.Invoke(() =>
                         {
                             if (savePath.Substring(savePath.LastIndexOf('.') + 1, 4) != "xlsx") savePath += ".xlsx";
+                            Task task = new Task(writeTempData);
+                            task.RunSynchronously();
                             //exportAll();
-                            dataKeeper.mainExport(totalReceivedPacket, savePath, progressBar, exportButton, exportLabel);
+                            dataKeeper.mainExport(totalReceivedPacket, savePath, loading, exportButton, exportLabel);
                         });
 
                     });
                 }
                 else return;
-                
             }));
+
+            //writeTempData();
             //export.MainExport(dataGrid, progressBar, totalReceivedPacket, rowColor, chartXLabels, lineValuesList, pieChartValues, exportButton, exportLabel, dimChartXLabels, dimLineValuesList);
         }
 
@@ -330,7 +338,7 @@ namespace PacketAnalysisApp
             dataGrid.Dispatcher.Invoke(new Action(() =>
             {
                 exportAll();
-                dataKeeper.mainExport(totalReceivedPacket, (string)savePath, progressBar, exportButton, exportLabel);
+                dataKeeper.mainExport(totalReceivedPacket, (string)savePath, loading, exportButton, exportLabel);
             }));
         }
 
@@ -658,38 +666,70 @@ namespace PacketAnalysisApp
 
                         string fileName = paket_proje[0] + "_" + paket_proje[1];
 
-                        if (dataKeeper.writeFinished)
+ 
+                        if (lineValuesList[paket_proje].Count == saveLength)
                         {
+                            lineValuesList[paket_proje].RemoveAt(0);
+                            chartXLabels[paket_proje].RemoveAt(0);
 
-                            dataKeeper.writeData("FREKANS", fileName, tempLineValuesList[paket_proje].ToList(), tempChartXLabels[paket_proje].ToList());
-                            tempChartXLabels[paket_proje].Clear();
-                            tempLineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Clear();
+                            chartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss"));
+                            lineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Add(totalReceivedPacket[paket_proje][0]);
+                            lineSeriesList[totalReceivedPacket.Keys.ElementAt(i)].Values = lineValuesList[totalReceivedPacket.Keys.ElementAt(i)];
 
-                            if (lineValuesList[paket_proje].Count == saveLength)
-                            {
-                                dataKeeper.writeOneData("FREKANS", fileName, lineValuesList[paket_proje].Last(), chartXLabels[paket_proje].Last());
-                                lineValuesList[paket_proje].RemoveAt(0);
-                                chartXLabels[paket_proje].RemoveAt(0);
-
-                                chartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss"));
-                                lineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Add(totalReceivedPacket[paket_proje][0]);
-                                lineSeriesList[totalReceivedPacket.Keys.ElementAt(i)].Values = lineValuesList[totalReceivedPacket.Keys.ElementAt(i)];
-                            }
-                            else
-                            {
-                                chartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss"));
-                                lineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Add(totalReceivedPacket[paket_proje][0]);
-                                lineSeriesList[totalReceivedPacket.Keys.ElementAt(i)].Values = lineValuesList[totalReceivedPacket.Keys.ElementAt(i)];
-                                dataKeeper.writeOneData("FREKANS", fileName, lineValuesList[paket_proje].Last(), chartXLabels[paket_proje].Last());
-                            }
+                            tempChartXLabels[paket_proje].Add(chartXLabels[paket_proje].Last());
+                            tempLineValuesList[paket_proje].Add(lineValuesList[paket_proje].Last());
                         }
                         else
                         {
-                            tempChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss"));
-                            tempLineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Add(totalReceivedPacket[paket_proje][0]);
+                            chartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss"));
+                            lineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Add(totalReceivedPacket[paket_proje][0]);
+                            lineSeriesList[totalReceivedPacket.Keys.ElementAt(i)].Values = lineValuesList[totalReceivedPacket.Keys.ElementAt(i)];
+
+                            tempChartXLabels[paket_proje].Add(chartXLabels[paket_proje].Last());
+                            tempLineValuesList[paket_proje].Add(lineValuesList[paket_proje].Last());
+                            //dataKeeper.writeOneData("FREKANS", fileName, lineValuesList[paket_proje].Last(), chartXLabels[paket_proje].Last());
+                        }
+
+                        if(tempChartXLabels[paket_proje].Count >= tempLength & dataKeeper.writeFinished)
+                        {
+                            dataKeeper.writeData("FREKANS", fileName, tempLineValuesList[paket_proje].ToList(), tempChartXLabels[paket_proje].ToList());
+                            tempLineValuesList[paket_proje].Clear();
+                            tempChartXLabels[paket_proje].Clear();
                         }
 
 
+                        //if (dataKeeper.writeFinished)
+                        //{
+                        //    if (lineValuesList[paket_proje].Count == saveLength)
+                        //    {
+                        //        dataKeeper.writeOneData("FREKANS", fileName, lineValuesList[paket_proje].Last(), chartXLabels[paket_proje].Last());
+                        //        lineValuesList[paket_proje].RemoveAt(0);
+                        //        chartXLabels[paket_proje].RemoveAt(0);
+
+                        //        chartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss"));
+                        //        lineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Add(totalReceivedPacket[paket_proje][0]);
+                        //        lineSeriesList[totalReceivedPacket.Keys.ElementAt(i)].Values = lineValuesList[totalReceivedPacket.Keys.ElementAt(i)];
+                        //    }
+                        //    else
+                        //    {
+                        //        chartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss"));
+                        //        lineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Add(totalReceivedPacket[paket_proje][0]);
+                        //        lineSeriesList[totalReceivedPacket.Keys.ElementAt(i)].Values = lineValuesList[totalReceivedPacket.Keys.ElementAt(i)];
+                        //        dataKeeper.writeOneData("FREKANS", fileName, lineValuesList[paket_proje].Last(), chartXLabels[paket_proje].Last());
+                        //    }
+
+
+                        //    //dataKeeper.writeData("FREKANS", fileName, tempLineValuesList[paket_proje].ToList(), tempChartXLabels[paket_proje].ToList());
+                        //    //tempChartXLabels[paket_proje].Clear();
+                        //    //tempLineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Clear();
+                        //}
+                        //else
+                        //{
+                        //    tempChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss"));
+                        //    tempLineValuesList[totalReceivedPacket.Keys.ElementAt(i)].Add(totalReceivedPacket[paket_proje][0]);
+                        //}
+
+                        //writeTempData();
 
                         setChartStatues(chartList[totalReceivedPacket.Keys.ElementAt(i)], lineValuesList[totalReceivedPacket.Keys.ElementAt(i)],
                                         chartXLabels[paket_proje], chartStatuses[paket_proje[0] + "_" + paket_proje[1]]);
@@ -716,8 +756,9 @@ namespace PacketAnalysisApp
                             ((chart.AxisY[0].Sections[0].Value > value.Max()) ? chart.AxisY[0].MaxValue = chart.AxisY[0].Sections[0].Value + 1 : 
                             chart.AxisY[0].MaxValue = value.Max() + 1) :
                             chart.AxisY[0].MaxValue = value.Max() + 1;
+
                         chart.AxisX[0].MinValue = 0;
-                        chart.AxisX[0].MaxValue = label.Count - 1;
+                        chart.AxisX[0].MaxValue = saveLength - 1;
                         break;
                     case "REAL":
                         chart.AxisY[0].MinValue = -1;
@@ -725,8 +766,9 @@ namespace PacketAnalysisApp
                             ((chart.AxisY[0].Sections[0].Value > value.Max()) ? chart.AxisY[0].MaxValue = chart.AxisY[0].Sections[0].Value + 1 :
                             chart.AxisY[0].MaxValue = value.Max() + 1) : 
                             chart.AxisY[0].MaxValue = value.Max() + 1;
-                        chart.AxisX[0].MinValue = label.Count - 20;
-                        chart.AxisX[0].MaxValue = label.Count - 1;
+
+                        chart.AxisX[0].MinValue = 0;
+                        chart.AxisX[0].MaxValue = saveLength - 1;
                         break;
                     case "DEFAULT":
 
@@ -739,9 +781,6 @@ namespace PacketAnalysisApp
                                     ((chart.AxisY[0].Sections[0].Value > value.Max()) ? chart.AxisY[0].MaxValue = chart.AxisY[0].Sections[0].Value + 1 :
                                     chart.AxisY[0].MaxValue = value.Max() + 1) :
                                     chart.AxisY[0].MaxValue = value.Max() + 1;
-
-                                chart.AxisX[0].MinValue = 0;
-                                chart.AxisX[0].MaxValue = saveLength - 1;
 
                                 chart.Zoom = ZoomingOptions.X;
                                 chart.Pan = PanningOptions.X;
@@ -1069,7 +1108,7 @@ namespace PacketAnalysisApp
             pieChartValues = new Dictionary<string, ChartValues<int>>();
             piechartPaket = new SeriesCollection();
 
-            Func<ChartPoint, string> labelPoint = chartPoint => string.Format("{0} ({1:P})\n{2}", chartPoint.Y, chartPoint.Participation, chartPoint.SeriesView.Title);
+            Func<ChartPoint, string> labelPoint = chartPoint => string.Format("{0} \n ({1:P})", chartPoint.Y, chartPoint.Participation);
             
             for (int i = 0; i < enumStruct[enumMatchWindow.paketName].Values.Count; i++)
             {
@@ -1081,7 +1120,7 @@ namespace PacketAnalysisApp
                     Values = pieChartValues[name],
                     DataLabels = true,
                     LabelPoint = labelPoint,
-                    FontSize = 12,
+                    FontSize = 10,
                     PushOut = 0                                        
                 };
                 piechartPaket.Add(pieSeries);
@@ -1335,6 +1374,24 @@ namespace PacketAnalysisApp
             return new ObservableCollection<T>(list.ToList()); 
         }
 
+        public void writeTempData()
+        {
+            for (int i = 0; i < tempDimLineValuesList.Count; i++)
+            {
+                string[] paket_proje = tempDimLineValuesList.ElementAt(i).Key;
+                string fileName = paket_proje[0] + "_" + paket_proje[1];
+                dataKeeper.writeData("BOYUT", fileName, tempDimLineValuesList[paket_proje].ToList(), tempDimChartXLabels[paket_proje].ToList());
+                tempDimChartXLabels[paket_proje].Clear();
+                tempDimLineValuesList[paket_proje].Clear();
+
+                dataKeeper.writeData("FREKANS", fileName, tempLineValuesList[paket_proje].ToList(), tempChartXLabels[paket_proje].ToList());
+                tempChartXLabels[paket_proje].Clear();
+                tempLineValuesList[paket_proje].Clear();
+                writeFinished = true;
+            }
+
+        }
+
         //Paketlerin alındığı fonksiyon bir thread'te çalışır
         public void receiveData()
         {
@@ -1362,45 +1419,69 @@ namespace PacketAnalysisApp
 
                     string fileName = paket_proje[0] + "_" + paket_proje[1];
 
-                    
-                    //dimLineValuesList[paket_proje].Add(bytes.Length);
-                    //dimLineSeriesList[paket_proje].Values = dimLineValuesList[paket_proje];
-                    //dimChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss:fff"));
-
-                    if (dataKeeper.writeFinished)
+                    if (dimLineValuesList[paket_proje].Count == saveLength)
                     {
-                        //if (tempDimChartXLabels[paket_proje].Count > 0)
-                        //{
+                        //dataKeeper.writeOneData("BOYUT", fileName, dimLineValuesList[paket_proje].Last(), dimChartXLabels[paket_proje].Last());
 
-                        //}
-                        dataKeeper.writeData("BOYUT", fileName, tempDimLineValuesList[paket_proje].ToList(), tempDimChartXLabels[paket_proje].ToList());
-                        tempDimChartXLabels[paket_proje].Clear();
-                        tempDimLineValuesList[paket_proje].Clear();
+                        dimChartXLabels[paket_proje].RemoveAt(0);
+                        dimLineValuesList[paket_proje].RemoveAt(0);
 
-                        if (dimLineValuesList[paket_proje].Count == saveLength)
-                        {
-                            dataKeeper.writeOneData("BOYUT", fileName, dimLineValuesList[paket_proje].Last(), dimChartXLabels[paket_proje].Last());
+                        dimLineValuesList[paket_proje].Add(bytes.Length);
+                        dimLineSeriesList[paket_proje].Values = dimLineValuesList[paket_proje];
+                        dimChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss:fff"));
 
-                            dimChartXLabels[paket_proje].RemoveAt(0);
-                            dimLineValuesList[paket_proje].RemoveAt(0);
-
-                            dimLineValuesList[paket_proje].Add(bytes.Length);
-                            dimChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss:fff"));
-
-                        }
-                        else
-                        {
-                            dimLineValuesList[paket_proje].Add(bytes.Length);
-                            dimLineSeriesList[paket_proje].Values = dimLineValuesList[paket_proje];
-                            dimChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss:fff"));
-                            dataKeeper.writeOneData("BOYUT", fileName, dimLineValuesList[paket_proje].Last(), dimChartXLabels[paket_proje].Last());
-                        }
+                        tempDimChartXLabels[paket_proje].Add(dimChartXLabels[paket_proje].Last());
+                        tempDimLineValuesList[paket_proje].Add(dimLineValuesList[paket_proje].Last());
                     }
                     else
                     {
-                        tempDimChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss:fff"));
-                        tempDimLineValuesList[paket_proje].Add(bytes.Length);
+                        dimLineValuesList[paket_proje].Add(bytes.Length);
+                        dimLineSeriesList[paket_proje].Values = dimLineValuesList[paket_proje];
+                        dimChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss:fff"));
+
+                        tempDimChartXLabels[paket_proje].Add(dimChartXLabels[paket_proje].Last());
+                        tempDimLineValuesList[paket_proje].Add(dimLineValuesList[paket_proje].Last());
+                        //dataKeeper.writeOneData("BOYUT", fileName, dimLineValuesList[paket_proje].Last(), dimChartXLabels[paket_proje].Last());
                     }
+
+                    if (tempDimChartXLabels[paket_proje].Count >= tempLength & dataKeeper.writeFinished)
+                    {
+                        dataKeeper.writeData("BOYUT", fileName, tempDimLineValuesList[paket_proje].ToList(), tempDimChartXLabels[paket_proje].ToList());
+                        tempDimChartXLabels[paket_proje].Clear();
+                        tempDimLineValuesList[paket_proje].Clear();
+                    }
+
+                    //if (dataKeeper.writeFinished)
+                    //{
+
+                    //    if (dimLineValuesList[paket_proje].Count == saveLength)
+                    //    {
+                    //        dataKeeper.writeOneData("BOYUT", fileName, dimLineValuesList[paket_proje].Last(), dimChartXLabels[paket_proje].Last());
+
+                    //        dimChartXLabels[paket_proje].RemoveAt(0);
+                    //        dimLineValuesList[paket_proje].RemoveAt(0);
+
+                    //        dimLineValuesList[paket_proje].Add(bytes.Length);
+                    //        dimChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss:fff"));
+
+                    //    }
+                    //    else
+                    //    {
+                    //        dimLineValuesList[paket_proje].Add(bytes.Length);
+                    //        dimLineSeriesList[paket_proje].Values = dimLineValuesList[paket_proje];
+                    //        dimChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss:fff"));
+                    //        dataKeeper.writeOneData("BOYUT", fileName, dimLineValuesList[paket_proje].Last(), dimChartXLabels[paket_proje].Last());
+                    //    }
+
+                    //    //dataKeeper.writeData("BOYUT", fileName, tempDimLineValuesList[paket_proje].ToList(), tempDimChartXLabels[paket_proje].ToList());
+                    //    //tempDimChartXLabels[paket_proje].Clear();
+                    //    //tempDimLineValuesList[paket_proje].Clear();
+                    //}
+                    //else
+                    //{
+                    //    tempDimChartXLabels[paket_proje].Add(DateTime.Now.ToString("HH:mm:ss:fff"));
+                    //    tempDimLineValuesList[paket_proje].Add(bytes.Length);
+                    //}
 
                     if (rowColorStart & dataGrid.Items.Count == totalReceivedPacket.Count)
                     {

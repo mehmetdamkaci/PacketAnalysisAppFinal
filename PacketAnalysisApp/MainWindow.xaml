@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:PacketAnalysisApp"
+        xmlns:local="clr-namespace:PacketAnalysisApp"        
+        xmlns:gif="http://wpfanimatedgif.codeplex.com"
         xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf" 
         WindowStartupLocation="CenterScreen" Width="1080" Height="720"
         AllowsTransparency="False" Background="#333333" Closed="MainAppClosed" Closing="MainAppClosing">
@@ -13,9 +14,9 @@
         <local:KeyValueConverterDim x:Key="KeyValueConverterDim"/>
     </Window.Resources>
 
-    
+
     <Grid  x:Name="mainGrid" Margin="54,36,41,10">
-        
+
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"></ColumnDefinition>
             <ColumnDefinition Width="*"/>
@@ -197,9 +198,16 @@
                 <DataGrid.RowDetailsVisibilityMode>Collapsed</DataGrid.RowDetailsVisibilityMode>
 
             </DataGrid>
-            <ProgressBar x:Name="progressBar" Visibility="Collapsed" Height="20" Width ="150" Margin="0,0,-32,0" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
-            <Label x:Name="exportLabel" Content="Tablo Dışarı Aktarıldı." Margin="0,0,0,3" HorizontalAlignment="Right" Width="130" Height="26"  
-                   VerticalAlignment="Bottom" FontWeight="Bold" Foreground="White" Visibility="Collapsed"/>
+            <Image x:Name="loading" gif:ImageBehavior.RepeatBehavior="Forever"
+               gif:ImageBehavior.AnimatedSource="C:\Users\PC_4232\Desktop\Mehmet\loading.gif" VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                   Height="60" Width ="100" Margin="0,0,-32,-19" Visibility="Collapsed"/>
+
+            <ProgressBar x:Name="progressBar" Visibility="Collapsed" Height="20" Width ="150" Margin="0,0,-32,0" 
+                            VerticalAlignment="Bottom" HorizontalAlignment="Right" IsIndeterminate="True"
+                            Foreground="red"/>
+            <Label x:Name="exportLabel" Content="Tablo Dışarı Aktarıldı." Margin="0,0,-32,3" HorizontalAlignment="Right" Width="130" Height="26"  
+                VerticalAlignment="Bottom" FontWeight="Bold" Foreground="White" Visibility="Collapsed"/>
+            <!--<TextBox x:Name="tbox" HorizontalAlignment="Left" Margin="324,254,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="315" Height="249"/>-->
 
         </Grid>
 

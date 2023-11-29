@@ -134,13 +134,13 @@ namespace PacketAnalysisApp
         {
         } 
 
-        public async void mainExport(Dictionary<string[], int[]> totalPacket, string savePath, ProgressBar progressBar,
+        public async void mainExport(Dictionary<string[], int[]> totalPacket, string savePath, Image loading,
                                      Button exportButton, Label exportLabel)
         {
             writeFinished = false;
             string initfileName = totalPacket.ElementAt(0).Key[0] + "_" + totalPacket.ElementAt(0).Key[1];
-            progressBar.Maximum = File.ReadAllLines(Path.Combine(dimPath, initfileName + extention)).Length*totalPacket.Count*1.2;
-            progressBar.Value = 0;
+            //progressBar.Maximum = File.ReadAllLines(Path.Combine(dimPath, initfileName + extention)).Length*totalPacket.Count*1.2;
+            //progressBar.Value = 0;
 
             var package = new ExcelPackage();
             var worksheetTable = package.Workbook.Worksheets.Add("Genel Tablo");
@@ -156,9 +156,9 @@ namespace PacketAnalysisApp
             pieExcelChart.DataLabel.ShowLegendKey = true;
 
             setCellStyle(worksheetTable, 1, 1, "PAKET ADI", Brushes.LightGray);
-            setCellStyle(worksheetTable, 1, 2, "PAKET ADI", Brushes.LightGray);
-            setCellStyle(worksheetTable, 1, 3, "PAKET ADI", Brushes.LightGray);
-            setCellStyle(worksheetTable, 1, 4, "PAKET ADI", Brushes.LightGray);
+            setCellStyle(worksheetTable, 1, 2, "PROJE ADI", Brushes.LightGray);
+            setCellStyle(worksheetTable, 1, 3, "TOPLAM GELEN PAKET", Brushes.LightGray);
+            setCellStyle(worksheetTable, 1, 4, "TOPLAM GELEN BOYUT", Brushes.LightGray);
 
             setCellStyle(worksheetTable, 1, 19, "PAKET ADI", Brushes.LightGray);
             setCellStyle(worksheetTable, 1, 20, "TOPLAM GELEN PAKET SAYISI", Brushes.LightGray);
@@ -214,7 +214,7 @@ namespace PacketAnalysisApp
                 columnFreq++;
                 paket = item.Key[0];
                 
-                progressBar.Value += 1;
+                //progressBar.Value += 1;
             }
 
             pieExcelChart.SetSize(300, 500);
@@ -224,8 +224,8 @@ namespace PacketAnalysisApp
           
             await Task.Run(() =>
             {
-                setTable("BOYUT", worksheetBoyut, worksheetBoyutChart, totalPacket, progressBar);
-                setTable("FREKANS", worksheetFrekans, worksheetChart, totalPacket, progressBar);
+                setTable("BOYUT", worksheetBoyut, worksheetBoyutChart, totalPacket);
+                setTable("FREKANS", worksheetFrekans, worksheetChart, totalPacket);
             });
 
             worksheetBoyut.Cells.AutoFitColumns();
@@ -246,8 +246,8 @@ namespace PacketAnalysisApp
             package.Dispose();
 
             await Task.Delay(1000);
-            progressBar.Visibility = Visibility.Collapsed;
-            progressBar.Value = 0;
+            loading.Visibility = Visibility.Collapsed;
+            //progressBar.Value = 0;
             exportLabel.Visibility = Visibility.Visible;
             await Task.Delay(1000);
 
@@ -258,7 +258,7 @@ namespace PacketAnalysisApp
 
         }
 
-        public void setTable(string type, ExcelWorksheet valueSheet, ExcelWorksheet chartSheet, Dictionary<string[], int[]> totalPacket, ProgressBar progressBar)
+        public void setTable(string type, ExcelWorksheet valueSheet, ExcelWorksheet chartSheet, Dictionary<string[], int[]> totalPacket)
         {
 
             string typePath = (type == "BOYUT") ? dimPath : freqPath;

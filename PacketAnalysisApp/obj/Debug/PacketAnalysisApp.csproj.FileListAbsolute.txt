@@ -168,3 +168,7 @@ C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\Of
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\System.IO.Packaging.dll
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\EPPlus.xml
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\OfficeOpenXml.Core.ExcelPackage.pdb
+C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\XamlRadialProgressBar.DotNet.dll
+C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\WpfAnimatedGif.dll
+C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\WpfAnimatedGif.pdb
+C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\WpfAnimatedGif.xml
