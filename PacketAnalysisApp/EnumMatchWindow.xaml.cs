@@ -19,13 +19,13 @@ using System.Windows.Media.Imaging;
 
 namespace PacketAnalysisApp
 {
-    public class CONFIG
-    {
-        public string Name { get; set; }
-        public string Path { get; set; }
-        public Dictionary<string, int> Freq { get; set; }
-        public Dictionary<string, int> Dim { get; set; }
-    }
+    //public class CONFIG
+    //{
+    //    public string Name { get; set; }
+    //    public string Path { get; set; }
+    //    public Dictionary<string, int> Freq { get; set; }
+    //    public Dictionary<string, int> Dim { get; set; }
+    //}
 
     public partial class EnumMatchWindow : Window
     {

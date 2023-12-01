@@ -61,7 +61,6 @@
                       CellStyle="{StaticResource Body_Content_DataGrid_Centering}" Margin="32,-32,-32,34" SelectionUnit="FullRow"
                       VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Item" EnableRowVirtualization="False"
                       CanUserSortColumns="False">
-
                 <DataGrid.Resources>
                     <Style TargetType="{x:Type DataGridColumnHeader}">
                         <Setter Property="Background" Value="Black"/>
@@ -196,6 +195,12 @@
                     </DataTemplate>
                 </DataGrid.RowDetailsTemplate>
                 <DataGrid.RowDetailsVisibilityMode>Collapsed</DataGrid.RowDetailsVisibilityMode>
+
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Height" Value="Auto"/>
+                    </Style>
+                </DataGrid.RowStyle>
 
             </DataGrid>
             <Image x:Name="loading" gif:ImageBehavior.RepeatBehavior="Forever"

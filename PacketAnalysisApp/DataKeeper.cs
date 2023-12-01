@@ -245,7 +245,7 @@ namespace PacketAnalysisApp
 
             package.Dispose();
 
-            await Task.Delay(1000);
+            //await Task.Delay(1000);
             loading.Visibility = Visibility.Collapsed;
             //progressBar.Value = 0;
             exportLabel.Visibility = Visibility.Visible;

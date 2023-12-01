@@ -172,3 +172,5 @@ C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\Xa
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\WpfAnimatedGif.dll
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\WpfAnimatedGif.pdb
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\WpfAnimatedGif.xml
+C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\obj\Debug\SettingsWindow.g.cs
+C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\obj\Debug\SettingsWindow.baml

@@ -31,7 +31,9 @@ namespace PacketAnalysisApp
 {
     public partial class MainWindow : Window
     {
-        
+        SettingsWindow settingsWindow;
+
+
         bool writeFinished = false;
 
         int saveLength = 20;
@@ -122,6 +124,12 @@ namespace PacketAnalysisApp
         public MainWindow()
         {                        
             InitializeComponent();
+
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.UriSource = new Uri(Environment.CurrentDirectory + "\\loading.gif");
+            image.EndInit();
+            ImageBehavior.SetAnimatedSource(loading, image);
 
             exportButton.IsEnabled = false;
             startConnect = true;
@@ -239,6 +247,7 @@ namespace PacketAnalysisApp
                     //dataKeeper.writeData("BOYUT", fileName, dimLineValuesList[selectedRow.Key].ToList<int>(), dimChartXLabels[selectedRow.Key].ToList<string>());
                     //dimLineValuesList[selectedRow.Key].Clear();
                     //dimChartXLabels[selectedRow.Key].Clear();
+                    writeTempData();
                     dataKeeper.readData("BOYUT", fileName, savePath, dimChartExportPanel[selectedRow.Key]);
                 }
             }));
@@ -269,6 +278,7 @@ namespace PacketAnalysisApp
                     //dataKeeper.writeData("FREKANS", fileName, lineValuesList[selectedRow.Key].ToList<int>(), chartXLabels[selectedRow.Key].ToList<string>());
                     //lineValuesList[selectedRow.Key].Clear();
                     //chartXLabels[selectedRow.Key].Clear();
+                    writeTempData();
                     dataKeeper.readData("FREKANS", fileName, savePath, chartExportPanel[selectedRow.Key]);
                 }
             }));            
@@ -630,6 +640,27 @@ namespace PacketAnalysisApp
             dataKeeper.fileNames = totalReceivedPacket.Keys.ToList();
 
             dataKeeper.CreateDir();
+
+            settingsWindow = new SettingsWindow();
+
+            ListView listView = settingsWindow.projectListView;
+            GridView gridView = (GridView)listView.View;
+
+
+            Dictionary<string[], int[]> mergedDict = expectedFreq
+            .Zip(expectedDim, (kv1, kv2) => new KeyValuePair<string[], int[]>(kv1.Key, new int[] { kv1.Value, kv2.Value }))
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, new StringArrayComparer());
+
+
+            gridView.Columns[0].DisplayMemberBinding = new Binding("Key[0]");
+            gridView.Columns[1].DisplayMemberBinding = new Binding("Key[1]");
+            //gridView.Columns[2].DisplayMemberBinding = new Binding("Value[0]");
+           // gridView.Columns[3].DisplayMemberBinding = new Binding("Value[1]");
+
+
+            listView.ItemsSource = mergedDict.ToList();
+            settingsWindow.projectsList.ItemsSource = barCharts.Keys.ToList();
+            settingsWindow.Show();
         }
 
         //Bir saniyede bir tabloyu ve frekans değerlerini güncelleyen fonksiyon
@@ -900,6 +931,9 @@ namespace PacketAnalysisApp
                                 }
                             }
                         }));
+                        settingsWindow.colors = rowColor;
+                        settingsWindow.setColor();
+                        
                     }
                     catch 
                     {

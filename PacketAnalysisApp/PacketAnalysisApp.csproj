@@ -142,6 +142,9 @@
     <Compile Include="Export.cs" />
     <Compile Include="KeyValueConverterDim.cs" />
     <Compile Include="KeyValueConverterFreq.cs" />
+    <Compile Include="SettingsWindow.xaml.cs">
+      <DependentUpon>SettingsWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="StringArrayComparer.cs" />
     <Page Include="EnumMatchWindow.xaml">
       <SubType>Designer</SubType>
@@ -162,6 +165,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="SettingsWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">
