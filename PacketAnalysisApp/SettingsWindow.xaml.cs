@@ -362,8 +362,8 @@ namespace PacketAnalysisApp
             } 
             else initIconName = iconNames[0];
 
-            string editName = "C:\\Users\\PC_4232\\Desktop\\Mehmet\\edit.png";
-            string tickName = "C:\\Users\\PC_4232\\Desktop\\Mehmet\\icon.png";
+            string editName = Environment.CurrentDirectory +  "\\edit.png";
+            string tickName = Environment.CurrentDirectory + "\\icon.png";
 
             BitmapImage bitmapImageEdit = new BitmapImage(new Uri(editName, UriKind.Absolute));
             BitmapImage bitmapImageTick = new BitmapImage(new Uri(tickName, UriKind.Absolute));
