@@ -15,7 +15,6 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using LiveCharts.Wpf;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -23,6 +22,9 @@ using Microsoft.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Remoting.Messaging;
+using System.Security.Principal;
+using System.Threading;
+using static NetMQ.NetMQSelector;
 
 namespace PacketAnalysisApp
 {
@@ -34,43 +36,100 @@ namespace PacketAnalysisApp
     {
         public string Name { get; set; }
         public string Path { get; set; }
+        public int chartLength { get; set; }
+        public int bufferLength { get; set; }
         public Dictionary<string, int> Freq { get; set; }
         public Dictionary<string, int> Dim { get; set; }
     }
 
     public partial class SettingsWindow : Window
     {
-        public string paketName;
-        public string paketPath;
+        public bool disconnect = false;
+
+        public string[] _packetProje;
+        public string packetName;
+        public string packetPath;
+        public int lenChart;
+        public int lenBuffer;
         public string jsonPath = "PacketConfig.json";
         public CONFIG configData;
         
         public Dictionary<string, Dictionary<int, string>> enumStruct;
-        public Dictionary<string[], int> expectedFreq;
-        public Dictionary<string[], int> expectedDim;
+        public Dictionary<string[], int> expectedFreq = new Dictionary<string[], int>(new StringArrayComparer());
+        public Dictionary<string[], int> expectedDim = new Dictionary<string[], int>(new StringArrayComparer());
         public Dictionary<string[], int[]> mergeExpected;
+        public Dictionary<string, SolidColorBrush> colors;
 
-
+        Dictionary<string[], int[]> mergedExpectedDict;
+        Dictionary<string, string> matchedEnums;
         string enumPath = string.Empty;
+        string enumText = null;
 
         TextBox freqBox;
         TextBox dimBox;
 
         string[] iconNames = { "edit" , "tick"};
         string initIconName = "edit";
+        
 
-
-        public Dictionary<string, SolidColorBrush> colors;
-
+        
         public SettingsWindow()
         {
             string json = File.ReadAllText(jsonPath);
             configData = JsonConvert.DeserializeObject<CONFIG>(json);
-            paketName = configData.Name;
-            paketPath = configData.Path;
+            packetName = configData.Name;
+            packetPath = configData.Path;
+            lenChart = configData.chartLength;
+            lenBuffer = configData.bufferLength;
+            enumText = File.ReadAllText(packetPath);
 
             InitializeComponent();
-            packetNameLabel.Content = paketName;
+            packetNameLabel.Content = packetName;
+            chartLengthBox.Text = lenChart.ToString();
+            bufferLengthBox.Text = lenBuffer.ToString();
+            ProcessEnumCode(enumText, false);
+            InitExpectedValue();
+        }
+
+        public void InitExpectedValue()
+        {
+
+
+            expectedFreq.Clear();
+            expectedDim.Clear();
+            for (int i = 0; i < configData.Freq.Count; i++)
+            {
+                string freqName = configData.Freq.ElementAt(i).Key;
+                int freqValue = configData.Freq.ElementAt(i).Value;
+                int dimValue = configData.Dim.ElementAt(i).Value;
+
+                expectedDim.Add(freqName.Split('.'), dimValue);
+                expectedFreq.Add(freqName.Split('.'), freqValue);
+            }
+
+            mergedExpectedDict = expectedFreq.Zip(expectedDim, (kv1, kv2) => new KeyValuePair<string[], int[]>(kv1.Key, new int[] { kv1.Value, kv2.Value }))
+                                             .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, new StringArrayComparer());
+
+            ((GridView)projectListView.View).Columns[0].DisplayMemberBinding = new Binding("Key[0]");
+            ((GridView)projectListView.View).Columns[1].DisplayMemberBinding = new Binding("Key[1]");
+
+            projectListView.ItemsSource = mergedExpectedDict.ToList();
+            projectsList.ItemsSource = enumStruct[packetName].Values.ToList();
+        }
+
+        public delegate void ChartUpdatingEventHandler (object sender, RoutedEventArgs e);
+        public event ChartUpdatingEventHandler ChartUpdating;
+        private void ChartSettingButtonClicked(object sender, RoutedEventArgs e)
+        {
+            lenBuffer = Convert.ToInt32(bufferLengthBox.Text);
+            lenChart = Convert.ToInt32(chartLengthBox.Text);
+
+            configData.chartLength = lenChart;
+            configData.bufferLength = lenBuffer;
+
+            File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
+
+            ChartUpdating?.Invoke(sender, e);
 
         }
 
@@ -81,18 +140,22 @@ namespace PacketAnalysisApp
 
             Nullable<bool> result = openFileDlg.ShowDialog();
 
-            if (result == true)
+            if (result == true & disconnect)
             {
                 enumPath = openFileDlg.FileName;
-                string enumText =  File.ReadAllText(enumPath);
-                ProcessEnumCode(enumText);
+                enumText = File.ReadAllText(enumPath);
+                ProcessEnumCode(enumText, true);
                 expectedGrid.Visibility = Visibility.Collapsed;
-                
             }
+            else 
+            {
+                if (result == true) MessageBox.Show("Soketten Bağlantıyı Kesiniz.");
+                return;
+            } 
         }
         
 
-        public void ProcessEnumCode(string enumFileText)
+        public void ProcessEnumCode(string enumFileText, bool privMatched)
         {
             if (enumStruct != null) enumStruct.Clear();
             else enumStruct = new Dictionary<string, Dictionary<int, string>>();
@@ -145,14 +208,16 @@ namespace PacketAnalysisApp
                 }    
             }
 
-            //InitExpectedValue(expectedFreq);
-            //InitExpectedValue(expectedDim);
-
-            CreateEnumMatchGrid();
+            if (privMatched)
+            {
+                CreateEnumMatchGrid();
+            }
+            
         }
 
         public void CreateEnumMatchGrid()
-        {            
+        {
+            bool completed = false;
             StackPanel matchPanel = new StackPanel();
             matchPanel.Orientation = Orientation.Vertical;
             matchPanel.HorizontalAlignment = HorizontalAlignment.Center;
@@ -163,6 +228,7 @@ namespace PacketAnalysisApp
             messageLabel.Margin = new Thickness(0, 10, 0, 30);
             messageLabel.HorizontalAlignment = HorizontalAlignment.Center;
             messageLabel.Foreground = Brushes.White;
+            messageLabel.Background = Brushes.Black;
             matchPanel.Children.Add(messageLabel);
 
             ScrollViewer scrollViewer = new ScrollViewer();
@@ -216,6 +282,7 @@ namespace PacketAnalysisApp
                     selectedPacketEnum.FontWeight = FontWeights.Bold;
                     selectedPacketEnum.Width = 50;
                     selectedPacketEnum.Visibility = Visibility.Collapsed;
+                    selectedPacketEnum.Click += SelectedPacketEnumClicked;
 
                     listBoxPanel.Children.Add(enumButton);
                     listBoxPanel.Children.Add(enumElementList);
@@ -223,17 +290,324 @@ namespace PacketAnalysisApp
                     enumPanelBorder.Child = listBoxPanel;
                     enumPanel.Children.Add(enumPanelBorder);
 
-                    
+                    if (i * (enumStruct.Count / 3 + 1) + j == enumStruct.Count - 1) 
+                    {
+                        completed = true;
+                        break;
+                    } 
 
-                    if (i * (enumStruct.Count / 3 + 1) + j == enumStruct.Count - 1) break;
-
-                }
+                }                
                 mainEnumPanel.Children.Add(enumPanel);
+                if(completed) break;
             }
             matchPanel.Children.Add(mainEnumPanel);
             scrollViewer.Content = matchPanel;
-           // matchPanel.Children.Add(scrollViewer);
             matchAndExpectedGrid.Children.Add(scrollViewer);
+
+        }
+
+        private void BackButtonClicked(object sender, RoutedEventArgs e)
+        {          
+            
+            if (((Button)sender).Name == "backGrid")
+            {
+                backButton.Name = "backMatch";
+                matchAndExpectedGrid.Children[3].Visibility = Visibility.Collapsed;
+                matchAndExpectedGrid.Children[2].Visibility = Visibility.Visible;
+            }
+            else
+            {
+                matchAndExpectedGrid.Children[2].Visibility = Visibility.Collapsed;
+                matchAndExpectedGrid.Children[1].Visibility = Visibility.Visible;
+                backButton.Visibility = Visibility.Collapsed;
+            }
+
+        }
+
+        private void SelectedPacketEnumClicked(object sender, RoutedEventArgs e)
+        {
+            if (matchAndExpectedGrid.Children.Count >= 3) matchAndExpectedGrid.Children.RemoveAt(2);
+
+            Button clickedSelectedButton = (Button)sender;
+            ScrollViewer scrollViewer = FindVisualParent<ScrollViewer>(clickedSelectedButton);
+            StackPanel stackPanel = FindVisualParent<StackPanel>(clickedSelectedButton);
+            packetName =  ((Button)stackPanel.Children[0]).Name;
+            packetNameLabel.Content = packetName;
+
+            ScrollViewer matchScroll = new ScrollViewer();            
+
+            StackPanel enumMatchingPanel = new StackPanel();            
+            enumMatchingPanel.Orientation = Orientation.Vertical;
+            enumMatchingPanel.HorizontalAlignment = HorizontalAlignment.Center;
+
+            Label msgPacketNameLabel = new Label();
+            msgPacketNameLabel.HorizontalAlignment = HorizontalAlignment.Center;
+            msgPacketNameLabel.VerticalAlignment = VerticalAlignment.Top;
+            msgPacketNameLabel.Foreground = Brushes.White;
+            msgPacketNameLabel.FontSize = 16;
+            msgPacketNameLabel.Margin = new Thickness(0, 10, 0, 20);
+            msgPacketNameLabel.Content = "Paket Enumı Olarak " + packetName + " Seçildi. Enum Eşleştirmelerini Yapınız.";
+            msgPacketNameLabel.Background = Brushes.Black;            
+
+            enumMatchingPanel.Children.Add(msgPacketNameLabel);
+
+            scrollViewer.Visibility = Visibility.Collapsed;
+            backButton.Visibility= Visibility.Visible;
+
+            for (int i = 0; i < enumStruct[packetName].Count; i++)
+            {
+                StackPanel comboBoxPanel = new StackPanel();
+                comboBoxPanel.Orientation = Orientation.Horizontal;
+                comboBoxPanel.HorizontalAlignment= HorizontalAlignment.Center;
+
+                Label enumNameLabel = new Label();
+                enumNameLabel.Content = enumStruct[packetName].Values.ElementAt(i).ToString();
+                enumNameLabel.Background = Brushes.LightGray;
+                enumNameLabel.Foreground = Brushes.Black;
+                enumNameLabel.BorderThickness = new Thickness(1);
+                enumNameLabel.BorderBrush = Brushes.Black;
+                enumNameLabel.FontSize = 14;
+                enumNameLabel.FontWeight = FontWeights.Bold;
+                enumNameLabel.Width = 250;
+
+                comboBoxPanel.Children.Add(enumNameLabel);
+
+                ComboBox enumBox = new ComboBox();
+                enumBox.Name = enumStruct[packetName].Values.ElementAt(i).ToString();
+                enumBox.VerticalContentAlignment = VerticalAlignment.Center;
+                enumBox.FontWeight = FontWeights.Bold;
+                enumBox.BorderBrush = Brushes.Red;
+                enumBox.BorderThickness = new Thickness(2);                
+                enumBox.Width = 250;
+                enumBox.SelectionChanged += EnumBoxSelectionChanged;                
+
+                for(int j = 0; j< enumStruct.Count; j++)
+                {
+                    if (enumStruct.ElementAt(j).Key != packetName)
+                    {
+                        enumBox.Items.Add(enumStruct.ElementAt(j).Key);
+                    }
+                }
+
+                enumBox.Items.Add("");
+                comboBoxPanel.Children.Add(enumBox);
+
+                enumMatchingPanel.Children.Add(comboBoxPanel);
+            }
+
+
+            Button matchingSaveButton = new Button();
+            matchingSaveButton.Content = "Kaydet";
+            matchingSaveButton.VerticalAlignment = VerticalAlignment.Bottom;
+            matchingSaveButton.Width = 80;
+            matchingSaveButton.Height = 25;
+            matchingSaveButton.Margin = new Thickness(0, 20, 0, 30);
+            matchingSaveButton.Click += MatchingSaveButtonClicked;
+
+            enumMatchingPanel.Children.Add(matchingSaveButton);
+            matchScroll.Content = enumMatchingPanel;
+
+            backButton.Name = "backMatch";
+
+            if (matchAndExpectedGrid.Children.Count == 3) matchAndExpectedGrid.Children.Insert(2, matchScroll);
+            else matchAndExpectedGrid.Children.Add(matchScroll);
+
+
+            //InitExpectedValue(expectedFreq);
+            //InitExpectedValue(expectedDim);
+        }
+
+        private void MatchingSaveButtonClicked(object sender, RoutedEventArgs e)
+        {
+            if (matchAndExpectedGrid.Children.Count == 4) matchAndExpectedGrid.Children.RemoveAt(3);
+            matchAndExpectedGrid.Children[2].Visibility = Visibility.Collapsed;
+
+            Button saveButton = sender as Button;
+            StackPanel stackPanel = FindVisualParent<StackPanel>(saveButton);
+
+            StackPanel dataGridPanel = new StackPanel();
+            dataGridPanel.Orientation = Orientation.Vertical;
+
+            Label gridLabel = new Label();
+            gridLabel.Content = "ENUM EŞLTEŞTİRMELERİ";
+            gridLabel.FontSize = 16;
+            gridLabel.Margin = new Thickness(0, 10, 0, 20);
+            gridLabel.HorizontalAlignment = HorizontalAlignment.Center;
+            gridLabel.Foreground = Brushes.White;
+            gridLabel.Background = Brushes.Black;
+            gridLabel.FontWeight = FontWeights.Bold;
+            dataGridPanel.Children.Add(gridLabel);
+
+            DataGrid matchGrid = new DataGrid();
+            matchGrid.HorizontalAlignment = HorizontalAlignment.Center;
+            matchGrid.VerticalAlignment = VerticalAlignment.Center;
+            matchGrid.AutoGenerateColumns = false;
+            matchGrid.AlternatingRowBackground = Brushes.LightGray;
+            matchGrid.Margin = new Thickness(50,0,50,0);
+            matchGrid.RowHeight = 30;
+            matchGrid.FontWeight = FontWeights.Bold;
+            matchGrid.FontSize = 14;
+
+            DataGridTextColumn enumName = new DataGridTextColumn
+            {
+                Header = "ENUM İSMİ",
+                Binding = new Binding("Key")
+                {
+                    Converter = new EnumMatchedGridConverter(packetName)
+                }                
+            };
+            DataGridTextColumn enumValue = new DataGridTextColumn
+            {
+                Header = "EŞLEŞTİĞİ ENUM",
+                Binding = new Binding("Value")
+            };
+
+            enumName.Width = new DataGridLength(1, DataGridLengthUnitType.Star);
+            enumValue.Width = new DataGridLength(1 * 1, DataGridLengthUnitType.Star);
+
+            enumName.HeaderStyle = new Style(typeof(DataGridColumnHeader));
+            enumName.HeaderStyle.Setters.Add(new Setter(DataGridColumnHeader.BackgroundProperty, Brushes.LightGray));
+            enumName.HeaderStyle.Setters.Add(new Setter(DataGridColumnHeader.FontWeightProperty, FontWeights.Bold));
+            enumName.HeaderStyle.Setters.Add(new Setter(DataGridColumnHeader.HorizontalContentAlignmentProperty, HorizontalAlignment.Center)); 
+
+
+            enumValue.HeaderStyle = new Style(typeof(DataGridColumnHeader));
+            enumValue.HeaderStyle.Setters.Add(new Setter(DataGridColumnHeader.BackgroundProperty, Brushes.LightGray));
+            enumValue.HeaderStyle.Setters.Add(new Setter(DataGridColumnHeader.FontWeightProperty, FontWeights.Bold));
+            enumValue.HeaderStyle.Setters.Add(new Setter(DataGridColumnHeader.HorizontalContentAlignmentProperty, HorizontalAlignment.Center));
+
+            matchGrid.Columns.Add(enumName);
+            matchGrid.Columns.Add(enumValue);
+
+            matchedEnums = new Dictionary<string, string>();
+            for (int i = 1; i < stackPanel.Children.Count - 1; i++)
+            {                
+                ComboBox comboBox = ((ComboBox)((StackPanel)stackPanel.Children[i]).Children[1]);
+                matchedEnums.Add(comboBox.Name.Replace("\n", ""), comboBox.Text.Replace("\n", ""));                
+            }
+
+            matchGrid.ItemsSource = matchedEnums.ToList();
+
+            Button saveGridButton = new Button();
+            saveGridButton.Content = "Kaydet";
+            saveGridButton.VerticalAlignment = VerticalAlignment.Bottom;
+            saveGridButton.Width = 80;
+            saveGridButton.Height = 25;
+            saveGridButton.Margin = new Thickness(0, 20, 0, 30);
+            saveGridButton.Click += saveGridButtonClicked;
+
+            dataGridPanel.Children.Add(matchGrid);
+            dataGridPanel.Children.Add(saveGridButton);
+
+            if (matchAndExpectedGrid.Children.Count == 4) 
+            {
+                matchAndExpectedGrid.Children.Insert(3, dataGridPanel);
+            } 
+            else matchAndExpectedGrid.Children.Add(dataGridPanel);
+
+            backButton.Name = "backGrid";
+        }
+
+        public delegate void SaveClickedEventHandler(object sender, RoutedEventArgs e);
+        public event SaveClickedEventHandler SaveClickedEvent;
+        public void saveGridButtonClicked(object sender, RoutedEventArgs e)
+        {    
+            string matchedEnumText = enumText;
+            for (int i = 0; i < matchedEnums.Count; i++)
+            {
+                if (matchedEnums.Values.ElementAt(i) != "")
+                {
+                    matchedEnumText = matchedEnumText.Replace("enum " + matchedEnums.Values.ElementAt(i), "enum " + matchedEnums.Keys.ElementAt(i));
+                }
+            }
+            string path;
+
+            if (!Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PacketAnalysis")))
+            {
+                Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PacketAnalysis"));
+            }
+
+            path = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis") + "\\Matched_" + enumPath.Substring(enumPath.LastIndexOf('\\') + 1);
+
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+                File.WriteAllText(path, matchedEnumText);
+            }
+            else
+            {
+                File.WriteAllText(path, matchedEnumText);
+            }
+
+            ProcessEnumCode(matchedEnumText, false);
+
+            configData.Path = path;
+            configData.Name = packetName;
+            File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
+
+            NewExpectedValue(expectedFreq, "FREQ");
+            NewExpectedValue(expectedDim, "DIM");
+
+            mergedExpectedDict = expectedFreq.Zip(expectedDim, (kv1, kv2) => new KeyValuePair<string[], int[]>(kv1.Key, new int[] { kv1.Value, kv2.Value }))
+                                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, new StringArrayComparer());
+
+            ((GridView)projectListView.View).Columns[0].DisplayMemberBinding = new Binding("Key[0]");
+            ((GridView)projectListView.View).Columns[1].DisplayMemberBinding = new Binding("Key[1]");
+
+            projectListView.ItemsSource = mergedExpectedDict.ToList();
+            projectsList.ItemsSource = enumStruct[packetName].Values.ToList();
+
+            matchAndExpectedGrid.Children[3].Visibility = Visibility.Collapsed;
+            matchAndExpectedGrid.Children[1].Visibility = Visibility.Collapsed;
+            backButton.Visibility = Visibility.Collapsed;
+            expectedGrid.Visibility = Visibility.Visible;
+
+            SaveClickedEvent?.Invoke(sender, e);
+        }
+
+        private void EnumBoxSelectionChanged(object sender, EventArgs e)
+        {
+            ComboBox comboBox = sender as ComboBox;
+            string comboContent = comboBox.Text;
+            string comboName = comboBox.Name;
+
+            StackPanel tempStackPanel = FindVisualParent<StackPanel>(comboBox);
+            StackPanel stackPanel = FindVisualParent<StackPanel>(tempStackPanel);
+
+            var selectedItem = comboBox.SelectedItem;
+
+            ComboBoxıtemsControl(comboName,stackPanel, selectedItem, comboContent);
+        }
+
+        public void ComboBoxıtemsControl(string name, StackPanel stackPanel, object selectedItem, string content)
+        {
+            for (int i = 1; i < stackPanel.Children.Count - 1; i++)
+            {                
+                ComboBox comboBox = ((ComboBox)((StackPanel)stackPanel.Children[i]).Children[1]);
+                if (comboBox.Name != name)
+                {
+                    if ((string)selectedItem == "")
+                    {
+                        if (content != "")
+                        {
+                            comboBox.Items.Remove("");
+                            comboBox.Items.Add(content);
+                            comboBox.Items.Add("");
+                        }                        
+                    }
+                    else
+                    {                        
+                        comboBox.Items.Remove(selectedItem);
+                        if (content != "") 
+                        {
+                            comboBox.Items.Remove("");
+                            comboBox.Items.Add(content);
+                            comboBox.Items.Add("");
+                        }
+                    }                    
+                }
+                
+            }
         }
 
         private void EnumButtonClicked(object sender, RoutedEventArgs e)
@@ -249,22 +623,39 @@ namespace PacketAnalysisApp
             else stackPanel.Children[1].Visibility = Visibility.Collapsed;
 
             if (stackPanel.Children[2].Visibility == Visibility.Collapsed) stackPanel.Children[2].Visibility = Visibility.Visible;
-            else stackPanel.Children[2].Visibility = Visibility.Collapsed;
-            
-
+            else stackPanel.Children[2].Visibility = Visibility.Collapsed;            
         }
 
-        public void InitExpectedValue(Dictionary<string[], int> expectedValues)
+        public void NewExpectedValue(Dictionary<string[], int> expectedValues, string key)
         {
-            for (int i = 0; i < enumStruct[paketName].Count; i++)
+            expectedValues.Clear();
+            for (int i = 0; i < enumStruct[packetName].Count; i++)
             {
-                for (int j = 0; j < enumStruct[enumStruct[paketName].Values.ElementAt(i)].Values.Count; j++)
+                for (int j = 0; j < enumStruct[enumStruct[packetName].Values.ElementAt(i)].Values.Count; j++)
                 {
-                    string[] paket_proje = { enumStruct[paketName].Values.ElementAt(i),
-                                                            enumStruct[enumStruct[paketName].Values.ElementAt(i)].Values.ElementAt(j)};
+                    string[] paket_proje = { enumStruct[packetName].Values.ElementAt(i),
+                                                            enumStruct[enumStruct[packetName].Values.ElementAt(i)].Values.ElementAt(j)};
                     expectedValues.Add(paket_proje, 0);
                 }
             }
+
+            Dictionary<string, int> tempExpectedValues = new Dictionary<string, int>();
+            for (int i = 0; i < expectedValues.Count; i++)
+            {
+                tempExpectedValues.Add(expectedValues.ElementAt(i).Key[0] + "." + expectedValues.ElementAt(i).Key[1], expectedValues.ElementAt(i).Value);
+            }
+
+            if(key == "FREQ")
+            {
+                configData.Freq = tempExpectedValues;
+                File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
+            }
+            else if(key == "DIM")
+            {
+                configData.Dim = tempExpectedValues;
+                File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
+            }
+
         }
 
 
@@ -323,32 +714,63 @@ namespace PacketAnalysisApp
 
         public void setColor()
         {
-            foreach (var listViewItem in projectListView.Items.Cast<object>().Select(b =>
-                    projectListView.ItemContainerGenerator.ContainerFromItem(b) as ListViewItem))
+            if(colors != null)
             {
-                if (listViewItem != null)
+                foreach (var listViewItem in projectListView.Items.Cast<object>().Select(b =>
+                        projectListView.ItemContainerGenerator.ContainerFromItem(b) as ListViewItem))
                 {
-                    KeyValuePair<string[], int[]> pair = (KeyValuePair<string[], int[]>)listViewItem.DataContext;
+                    if (listViewItem != null)
+                    {
+                        KeyValuePair<string[], int[]> pair = (KeyValuePair<string[], int[]>)listViewItem.DataContext;
 
-                    SolidColorBrush newSolidColorBrush = new SolidColorBrush(Color.FromArgb((byte)200, colors[pair.Key[0]].Color.R,
-                                                        colors[pair.Key[0]].Color.G, colors[pair.Key[0]].Color.B));
-                    listViewItem.BorderBrush = newSolidColorBrush;
+                        SolidColorBrush newSolidColorBrush = new SolidColorBrush(Color.FromArgb((byte)200, colors[pair.Key[0]].Color.R,
+                                                            colors[pair.Key[0]].Color.G, colors[pair.Key[0]].Color.B));
+                        listViewItem.BorderBrush = newSolidColorBrush;
+                    }
+                }
+
+                foreach (var listViewItem in projectsList.Items.Cast<object>().Select(b =>
+                        projectsList.ItemContainerGenerator.ContainerFromItem(b) as ListViewItem))
+                {
+                    if (listViewItem != null)
+                    {
+                        string pair = (string)listViewItem.DataContext;
+
+                        SolidColorBrush newSolidColorBrush = new SolidColorBrush(Color.FromArgb((byte)200, colors[pair].Color.R,
+                                                            colors[pair].Color.G, colors[pair].Color.B));
+                        listViewItem.BorderBrush = newSolidColorBrush;
+                    }
                 }
             }
 
-            foreach (var listViewItem in projectsList.Items.Cast<object>().Select(b =>
-                    projectsList.ItemContainerGenerator.ContainerFromItem(b) as ListViewItem))
+        }
+
+        public void updateExpetedBox(string[] name)
+        {
+            foreach (var listViewItem in projectListView.Items.Cast<object>().Select(b =>
+                                         projectListView.ItemContainerGenerator.ContainerFromItem(b) as ListViewItem))
             {
                 if (listViewItem != null)
-                {
-                    string pair = (string)listViewItem.DataContext;
+                {                   
+                    KeyValuePair<string[], int[]> pair = (KeyValuePair<string[], int[]>)listViewItem.DataContext;
 
-                    SolidColorBrush newSolidColorBrush = new SolidColorBrush(Color.FromArgb((byte)200, colors[pair].Color.R,
-                                                        colors[pair].Color.G, colors[pair].Color.B));
-                    listViewItem.BorderBrush = newSolidColorBrush;
+                    if (pair.Key[0] == name[0] & pair.Key[1] == name[1])
+                    {
+                        TextBox updateFreqBox = FindVisualChild<TextBox>(listViewItem, "freqBox");
+                        TextBox updateDimBox = FindVisualChild<TextBox>(listViewItem, "dimBox");
+
+                        updateFreqBox.Text = expectedFreq[name].ToString();
+                        updateDimBox.Text = expectedDim[name].ToString();
+
+
+                    }
+
                 }
             }
         }
+
+        public delegate void UpdateClickedEventHandler(object sender, RoutedEventArgs e);
+        public event UpdateClickedEventHandler UpdateClickedEvent;
         private void UpdateClick(object sender, RoutedEventArgs e)
         {
             Button clickedButton = (Button)sender;            
@@ -393,10 +815,10 @@ namespace PacketAnalysisApp
                     dimBox.BorderThickness = new Thickness(2);
                     dimBox.Background = Brushes.White;
                     dimBox.BorderBrush = Brushes.DimGray;
-
                 }
 
             }
+
             else if(buttonIcon.Name == "tick")
             {
                 buttonIcon.Source = bitmapImageEdit;
@@ -417,11 +839,21 @@ namespace PacketAnalysisApp
                     dimBox.Background = Brushes.Transparent;
                     dimBox.BorderThickness = new Thickness(0);
                 }
+
+                string[] packetProje = ((KeyValuePair<string[], int[]>)item.DataContext).Key;
+                string name = packetProje[0] + "." + packetProje[1];
+
+                expectedFreq[packetProje] = Convert.ToInt32(freqBox.Text);
+                configData.Freq[name] = expectedFreq[packetProje];
+
+                expectedDim[packetProje] = Convert.ToInt32(dimBox.Text);
+                configData.Dim[name] = expectedDim[packetProje];
+
+                _packetProje = packetProje;
+
+                File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
+                UpdateClickedEvent?.Invoke(sender, e);
             }
-
-            
-
-        
         }
 
         private void FreqBoxKeyDown(object sender, KeyEventArgs e)

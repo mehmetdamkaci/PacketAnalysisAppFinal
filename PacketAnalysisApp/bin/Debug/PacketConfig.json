@@ -1,9 +1,11 @@
 {
   "Name": "CZR_PAKET",
-  "Path": "Matched_CZR_Paket.cs",
+  "Path": "C:\\Users\\PC_4232\\AppData\\Roaming\\PacketAnalysis\\Matched_CZR_Paket.cs",
+  "chartLength": 20,
+  "bufferLength": 20,
   "Freq": {
-    "CZR_SURECLER.SUREC_1": 2,
-    "CZR_SURECLER.SUREC_2": 4,
+    "CZR_SURECLER.SUREC_1": 1,
+    "CZR_SURECLER.SUREC_2": 0,
     "CZR_SURECLER.SUREC_3": 0,
     "CZR_SURECLER.SUREC_4": 0,
     "CZR_SURECLER.SUREC_5": 0,
@@ -52,7 +54,7 @@
     "CZR_HIZ.HIZ_4": 0,
     "CZR_HIZ.HIZ_5": 0,
     "CZR_HIZ.HIZ_6": 0,
-    "CZR_HIZ.HIZ_7": 0,
+    "CZR_HIZ.HIZ_7": 1,
     "CZR_HIZ.HIZ_8": 0,
     "CZR_UZAKLIK.UZAKLIK_1": 0,
     "CZR_UZAKLIK.UZAKLIK_2": 0,
