@@ -13,6 +13,7 @@ using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.Remoting.Channels;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,7 +25,6 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using System.Windows.Shell;
 using System.Windows.Threading;
 using WpfAnimatedGif;
@@ -35,7 +35,8 @@ namespace PacketAnalysisApp
     {
         SettingsWindow settingsWindow = new SettingsWindow();
 
-
+        string nowDate = null;
+        bool appClosing = false;
         bool writeFinished = false;
 
         int saveLength;
@@ -132,6 +133,8 @@ namespace PacketAnalysisApp
             image.EndInit();
             ImageBehavior.SetAnimatedSource(loading, image);
 
+            AppClosed += MainAppClosed;
+            dataKeeper.ExportFinished += ExportFinished;            
             exportButton.IsEnabled = false;
             startConnect = true;
             disconnectButton.IsEnabled = false;
@@ -159,7 +162,6 @@ namespace PacketAnalysisApp
 
             pieChart.DataTooltip = null;
         }
-
 
         private void setting(object sender, RoutedEventArgs e)
         {
@@ -360,7 +362,6 @@ namespace PacketAnalysisApp
 
         public void exportAll()
         {
-
             for (int i = 0; i < totalReceivedPacket.Count; i++)
             {
                 string fileName = totalReceivedPacket.ElementAt(i).Key[0] + "_" + totalReceivedPacket.ElementAt(i).Key[1];
@@ -711,6 +712,7 @@ namespace PacketAnalysisApp
             dataKeeper.fileNames = totalReceivedPacket.Keys.ToList();
 
             dataKeeper.CreateDir();
+            nowDate = dataKeeper.nowDate;
 
         }
 
@@ -1633,7 +1635,32 @@ namespace PacketAnalysisApp
         }
 
         //Program kapandığında oluşan event
-        private void MainAppClosed(object sender, EventArgs e)
+
+        delegate void AppClosedEventHandler(object sender, EventArgs e);
+        event AppClosedEventHandler AppClosed;  
+        private void ExportFinished()
+        {
+            object sender = new object();
+            EventArgs e = new EventArgs();
+
+            if (appClosing)
+            {
+                MessageBoxResult resultSave = MessageBox.Show("Kaydedilen Veriler Silinsin Mi?", "", MessageBoxButton.YesNoCancel);
+                if (resultSave == MessageBoxResult.Yes)
+                {
+                    string folderPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + paketName + "\\" + nowDate);
+                    Directory.Delete(folderPath, true);
+                    AppClosed?.Invoke(sender,e);
+                }
+                else if (resultSave == MessageBoxResult.No)
+                {
+                    exportAll();
+                    AppClosed?.Invoke(sender, e);
+                }
+                else { };
+            }
+        }
+        private void MainAppClosed(object sender = null, EventArgs e=null)
         {
             subscriber.Abort();
             subSocket.Dispose();
@@ -1644,9 +1671,23 @@ namespace PacketAnalysisApp
         {
             closing = true;
             e.Cancel = true;
+            appClosing = true;
 
-            exportAll();
-            MainAppClosed(sender, e);
+            //exportAll();
+
+            MessageBoxResult resultExport = MessageBox.Show("Kaydedilen Veriler Dışarı Aktarılsın mı?", "" , MessageBoxButton.YesNo);
+            if (resultExport == MessageBoxResult.Yes)
+            {
+                RoutedEventArgs re = new RoutedEventArgs();
+                exportClick(sender, re);                
+            }
+            else if(resultExport == MessageBoxResult.No)
+            {
+                ExportFinished();
+            }
+
+
+            //MainAppClosed(sender, e);
         }
 
         //Grafikteki ZOOM- butonuna tıklandığında oluşan event

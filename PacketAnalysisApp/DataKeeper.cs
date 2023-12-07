@@ -26,7 +26,8 @@ namespace PacketAnalysisApp
         string freqPath = null;
         string dimPath = null;
 
-        public string packetName = null;
+        public string nowDate = null;
+        public string packetName = null;        
 
         public Dictionary<string, SolidColorBrush> colors;
         public List<string[]> fileNames = new List<string[]>();
@@ -49,7 +50,7 @@ namespace PacketAnalysisApp
         }
         public void CreateDir()
         {
-            string nowDate = DateTime.Now.ToString("dd/MM/yy") + "--" + DateTime.Now.ToString("HH/mm");
+            nowDate = DateTime.Now.ToString("dd/MM/yy") + "--" + DateTime.Now.ToString("HH/mm");
             
             if(!Directory.Exists(mainPath)) 
             {
@@ -134,6 +135,8 @@ namespace PacketAnalysisApp
         {
         } 
 
+        public delegate void ExportFinishedEventHandler();
+        public event ExportFinishedEventHandler ExportFinished;
         public async void mainExport(Dictionary<string[], int[]> totalPacket, string savePath, Image loading,
                                      Button exportButton, Label exportLabel)
         {
@@ -254,8 +257,8 @@ namespace PacketAnalysisApp
             exportLabel.Visibility = Visibility.Collapsed;
             exportButton.Visibility = Visibility.Visible;
 
-            writeFinished = true;
-
+            writeFinished = true;            
+            ExportFinished?.Invoke();
         }
 
         public void setTable(string type, ExcelWorksheet valueSheet, ExcelWorksheet chartSheet, Dictionary<string[], int[]> totalPacket)

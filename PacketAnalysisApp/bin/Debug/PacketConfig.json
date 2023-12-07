@@ -1,10 +1,10 @@
 {
   "Name": "CZR_PAKET",
   "Path": "C:\\Users\\PC_4232\\AppData\\Roaming\\PacketAnalysis\\Matched_CZR_Paket.cs",
-  "chartLength": 20,
+  "chartLength": 10,
   "bufferLength": 20,
   "Freq": {
-    "CZR_SURECLER.SUREC_1": 1,
+    "CZR_SURECLER.SUREC_1": 6,
     "CZR_SURECLER.SUREC_2": 0,
     "CZR_SURECLER.SUREC_3": 0,
     "CZR_SURECLER.SUREC_4": 0,
