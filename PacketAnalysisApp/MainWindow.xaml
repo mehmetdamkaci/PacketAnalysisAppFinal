@@ -204,7 +204,7 @@
 
             </DataGrid>
             <Image x:Name="loading" gif:ImageBehavior.RepeatBehavior="Forever"
-               gif:ImageBehavior.AnimatedSource="C:\Users\PC_4232\Desktop\Mehmet\loading.gif" VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                VerticalAlignment="Bottom" HorizontalAlignment="Right"
                    Height="60" Width ="100" Margin="0,0,-32,-19" Visibility="Collapsed"/>
 
             <ProgressBar x:Name="progressBar" Visibility="Collapsed" Height="20" Width ="150" Margin="0,0,-32,0" 
@@ -212,6 +212,7 @@
                             Foreground="red"/>
             <Label x:Name="exportLabel" Content="Tablo Dışarı Aktarıldı." Margin="0,0,-32,3" HorizontalAlignment="Right" Width="130" Height="26"  
                 VerticalAlignment="Bottom" FontWeight="Bold" Foreground="White" Visibility="Collapsed"/>
+            <Label x:Name="logLabel" Content="" HorizontalContentAlignment="Center" Foreground="WhiteSmoke" Width="649" HorizontalAlignment="Center" Height="26" VerticalAlignment="Bottom" />
             <!--<TextBox x:Name="tbox" HorizontalAlignment="Left" Margin="324,254,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="315" Height="249"/>-->
 
         </Grid>
@@ -234,7 +235,7 @@
         <StackPanel Grid.Column="2" Orientation="Vertical">
             <lvc:PieChart x:Name="pieChart" Foreground="AliceBlue"
                         InnerRadius="45" LegendLocation="None" Hoverable="False" Series="{Binding SeriesCollection}" 
-                        Height="314" DisableAnimations="True" Margin="0,0,0,80" DataClick="PieChartClick" Width="323" >
+                        Height="314" DisableAnimations="True" Margin="0,0,0,80" DataClick="PieChartClick" Width="325" >
                 <lvc:PieChart.CacheMode>
                     <BitmapCache EnableClearType="False" 
                                  RenderAtScale="1"

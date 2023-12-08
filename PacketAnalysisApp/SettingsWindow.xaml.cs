@@ -84,17 +84,89 @@ namespace PacketAnalysisApp
             enumText = File.ReadAllText(packetPath);
 
             InitializeComponent();
+
             packetNameLabel.Content = packetName;
             chartLengthBox.Text = lenChart.ToString();
             bufferLengthBox.Text = lenBuffer.ToString();
             ProcessEnumCode(enumText, false);
             InitExpectedValue();
+            
+        }
+
+        public void InitIcon()
+        {
+            BitmapImage addEnumSource = new BitmapImage();
+            addEnumSource.BeginInit();
+            addEnumSource.UriSource = new Uri((Path.Combine(Environment.CurrentDirectory, "download2.png")));
+            addEnumSource.EndInit();
+            addEnumIcon.Source = addEnumSource;
+
+            foreach (var listViewItem in projectListView.Items.Cast<object>().Select(b =>
+                     projectListView.ItemContainerGenerator.ContainerFromItem(b) as ListViewItem))
+            {
+                Image editImage = FindVisualChild<Image>(listViewItem, "edit");
+                BitmapImage editSource = new BitmapImage();
+                editSource.BeginInit();
+                editSource.UriSource = new Uri((Path.Combine(Environment.CurrentDirectory, "edit.png")));
+                editSource.EndInit();
+                editImage.Source = editSource;
+            }
+
+        }
+
+        private void ListView_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            ListView listView = sender as ListView;
+            GridView gView = listView.View as GridView;
+
+            var workingWidth = listView.ActualWidth - SystemParameters.VerticalScrollBarWidth;
+            var col1 = 0.28;
+            var col2 = 0.28;
+            var col3 = 0.17;
+            var col4 = 0.16;
+            var col5 = 0.11;
+
+            if(workingWidth > 0)
+            {
+                gView.Columns[0].Width = workingWidth * col1;
+                gView.Columns[1].Width = workingWidth * col2;
+                gView.Columns[2].Width = workingWidth * col3;
+                gView.Columns[3].Width = workingWidth * col4;
+                gView.Columns[4].Width = workingWidth * col5;
+            }
+            //InitIcon();
+            //setColor();
+            
+        }
+
+
+        private void ProjectsView_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            ListView listView = sender as ListView;
+            GridView gView = listView.View as GridView;
+
+            var workingWidth = listView.ActualWidth - SystemParameters.VerticalScrollBarWidth; // take into account vertical scrollbar
+
+            if(workingWidth>0) gView.Columns[0].Width = workingWidth;
+        }
+
+        //public delegate void UpdateExpectedHandler();
+        //public event UpdateExpectedHandler UpdateExpected;        
+        public void showUpdateListView()
+        {
+            for(int i = 0; i<mergedExpectedDict.Count; i++) 
+            {
+                string freqName = configData.Freq.ElementAt(i).Key;
+                int freqValue = configData.Freq.ElementAt(i).Value;
+                int dimValue = configData.Dim.ElementAt(i).Value;
+                mergedExpectedDict.ElementAt(i).Value[0] = freqValue;
+                mergedExpectedDict.ElementAt(i).Value[1] = dimValue;                
+            }
+            projectListView.Items.Refresh();            
         }
 
         public void InitExpectedValue()
         {
-
-
             expectedFreq.Clear();
             expectedDim.Clear();
             for (int i = 0; i < configData.Freq.Count; i++)
@@ -115,6 +187,7 @@ namespace PacketAnalysisApp
 
             projectListView.ItemsSource = mergedExpectedDict.ToList();
             projectsList.ItemsSource = enumStruct[packetName].Values.ToList();
+                    
         }
 
         public delegate void ChartUpdatingEventHandler (object sender, RoutedEventArgs e);
@@ -133,6 +206,8 @@ namespace PacketAnalysisApp
 
         }
 
+        public delegate void DisconnectEventHandler(object sender, RoutedEventArgs e);
+        public event DisconnectEventHandler DisconnectEvent;
         private void AddEnumFile_Clicked(object sender, RoutedEventArgs e)
         {
             Microsoft.Win32.OpenFileDialog openFileDlg = new Microsoft.Win32.OpenFileDialog();
@@ -149,11 +224,17 @@ namespace PacketAnalysisApp
             }
             else 
             {
-                if (result == true) MessageBox.Show("Soketten Bağlantıyı Kesiniz.");
+                if (result == true) 
+                {
+                    DisconnectEvent?.Invoke(sender, e);
+                    enumPath = openFileDlg.FileName;
+                    enumText = File.ReadAllText(enumPath);
+                    ProcessEnumCode(enumText, true);
+                    expectedGrid.Visibility = Visibility.Collapsed;
+                } 
                 return;
             } 
-        }
-        
+        }        
 
         public void ProcessEnumCode(string enumFileText, bool privMatched)
         {
@@ -207,6 +288,8 @@ namespace PacketAnalysisApp
                     }
                 }    
             }
+
+            projectsList.ItemsSource = null;
 
             if (privMatched)
             {
@@ -411,10 +494,6 @@ namespace PacketAnalysisApp
 
             if (matchAndExpectedGrid.Children.Count == 3) matchAndExpectedGrid.Children.Insert(2, matchScroll);
             else matchAndExpectedGrid.Children.Add(matchScroll);
-
-
-            //InitExpectedValue(expectedFreq);
-            //InitExpectedValue(expectedDim);
         }
 
         private void MatchingSaveButtonClicked(object sender, RoutedEventArgs e)
@@ -576,38 +655,45 @@ namespace PacketAnalysisApp
 
             var selectedItem = comboBox.SelectedItem;
 
-            ComboBoxıtemsControl(comboName,stackPanel, selectedItem, comboContent);
+            ComboBoxıtemsControl(comboName, stackPanel, selectedItem, comboContent);
         }
 
         public void ComboBoxıtemsControl(string name, StackPanel stackPanel, object selectedItem, string content)
         {
-            for (int i = 1; i < stackPanel.Children.Count - 1; i++)
-            {                
-                ComboBox comboBox = ((ComboBox)((StackPanel)stackPanel.Children[i]).Children[1]);
-                if (comboBox.Name != name)
+            Task.Run(() =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    if ((string)selectedItem == "")
+                    for (int i = 1; i < stackPanel.Children.Count - 1; i++)
                     {
-                        if (content != "")
+                        ComboBox comboBox = ((ComboBox)((StackPanel)stackPanel.Children[i]).Children[1]);
+                        if (comboBox.Name != name)
                         {
-                            comboBox.Items.Remove("");
-                            comboBox.Items.Add(content);
-                            comboBox.Items.Add("");
-                        }                        
-                    }
-                    else
-                    {                        
-                        comboBox.Items.Remove(selectedItem);
-                        if (content != "") 
-                        {
-                            comboBox.Items.Remove("");
-                            comboBox.Items.Add(content);
-                            comboBox.Items.Add("");
+                            if ((string)selectedItem == "")
+                            {
+                                if (content != "")
+                                {
+                                    comboBox.Items.Remove("");
+                                    comboBox.Items.Add(content);
+                                    comboBox.Items.Add("");
+                                }
+                            }
+                            else
+                            {
+                                comboBox.Items.Remove(selectedItem);
+                                if (content != "")
+                                {
+                                    comboBox.Items.Remove("");
+                                    comboBox.Items.Add(content);
+                                    comboBox.Items.Add("");
+                                }
+                            }
                         }
-                    }                    
-                }
-                
-            }
+                    }
+                });
+
+            });
+
         }
 
         private void EnumButtonClicked(object sender, RoutedEventArgs e)
@@ -714,7 +800,8 @@ namespace PacketAnalysisApp
 
         public void setColor()
         {
-            if(colors != null)
+
+            if (colors != null)
             {
                 foreach (var listViewItem in projectListView.Items.Cast<object>().Select(b =>
                         projectListView.ItemContainerGenerator.ContainerFromItem(b) as ListViewItem))
@@ -742,7 +829,7 @@ namespace PacketAnalysisApp
                     }
                 }
             }
-
+            
         }
 
         public void updateExpetedBox(string[] name)
@@ -761,10 +848,7 @@ namespace PacketAnalysisApp
 
                         updateFreqBox.Text = expectedFreq[name].ToString();
                         updateDimBox.Text = expectedDim[name].ToString();
-
-
                     }
-
                 }
             }
         }
@@ -773,6 +857,7 @@ namespace PacketAnalysisApp
         public event UpdateClickedEventHandler UpdateClickedEvent;
         private void UpdateClick(object sender, RoutedEventArgs e)
         {
+            bool dataControl = false;
             Button clickedButton = (Button)sender;            
 
             Image buttonIcon = FindVisualChild<Image>(clickedButton, iconNames[0]);
@@ -794,6 +879,8 @@ namespace PacketAnalysisApp
 
             freqBox = FindVisualChild<TextBox>(item, "freqBox");
             dimBox = FindVisualChild<TextBox>(item, "dimBox");
+
+
 
             if (buttonIcon.Name == "edit")
             {
@@ -821,38 +908,81 @@ namespace PacketAnalysisApp
 
             else if(buttonIcon.Name == "tick")
             {
-                buttonIcon.Source = bitmapImageEdit;
-                buttonIcon.Name= "edit";
-                initIconName = "edit";
-
                 if (freqBox != null)
                 {
+                    try
+                    {
+                        Convert.ToInt32(freqBox.Text);
+                    }
+                    catch 
+                    {
+                        MessageBox.Show("Beklenen Frekans Değeri Pozitif Bir Tamsayı Olmalıdır.");
+                        dataControl = false;
+                        return;
+                    }
+
+                    if (Convert.ToInt32(freqBox.Text) < 0)
+                    {
+                        MessageBox.Show("Beklenen Frekans Değeri Sıfırdan Küçük Olamaz.");
+                        dataControl = false;
+                        return;
+                    }
+
+
+
                     freqBox.IsReadOnly = true;
                     freqBox.BorderBrush = Brushes.LightGray;
                     freqBox.Background = Brushes.Transparent;
                     freqBox.BorderThickness = new Thickness(0);
+                    dataControl = true;
                 }
                 if (dimBox != null)
                 {
+                    try
+                    {
+                        Convert.ToInt32(dimBox.Text);
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Beklenen Boyut Değeri Pozitif Bir Tamsayı Olmalıdır.");
+                        dataControl = false;
+                        return;
+                    }
+
+                    if (Convert.ToInt32(dimBox.Text) < 0)
+                    {
+                        MessageBox.Show("Beklenen Boyut Değeri Sıfırdan Küçük Olamaz.");
+                        dataControl = false;
+                        return;
+                    }
                     dimBox.IsReadOnly = true;
                     dimBox.BorderBrush = Brushes.LightGray;
                     dimBox.Background = Brushes.Transparent;
                     dimBox.BorderThickness = new Thickness(0);
+                    dataControl = true;
                 }
 
-                string[] packetProje = ((KeyValuePair<string[], int[]>)item.DataContext).Key;
-                string name = packetProje[0] + "." + packetProje[1];
+                if (dataControl)
+                {
+                    buttonIcon.Source = bitmapImageEdit;
+                    buttonIcon.Name = "edit";
+                    initIconName = "edit";
 
-                expectedFreq[packetProje] = Convert.ToInt32(freqBox.Text);
-                configData.Freq[name] = expectedFreq[packetProje];
+                    string[] packetProje = ((KeyValuePair<string[], int[]>)item.DataContext).Key;
+                    string name = packetProje[0] + "." + packetProje[1];
 
-                expectedDim[packetProje] = Convert.ToInt32(dimBox.Text);
-                configData.Dim[name] = expectedDim[packetProje];
+                    expectedFreq[packetProje] = Convert.ToInt32(freqBox.Text);
+                    configData.Freq[name] = expectedFreq[packetProje];
 
-                _packetProje = packetProje;
+                    expectedDim[packetProje] = Convert.ToInt32(dimBox.Text);
+                    configData.Dim[name] = expectedDim[packetProje];
 
-                File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
-                UpdateClickedEvent?.Invoke(sender, e);
+                    _packetProje = packetProje;
+
+                    File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
+                    UpdateClickedEvent?.Invoke(sender, e);
+                }
+
             }
         }
 

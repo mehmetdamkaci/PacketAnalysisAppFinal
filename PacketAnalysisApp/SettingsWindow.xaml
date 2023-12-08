@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:PacketAnalysisApp"
         mc:Ignorable="d"
         Title="SettingsWindow" Height="840" Width="1280" Background="#333333">
-
+    
     <Window.Resources>
         <Style TargetType="{x:Type ListViewItem}">
             <Setter Property="Foreground" Value="Black"/>
@@ -17,7 +17,7 @@
             <Setter Property="BorderThickness" Value="4,4,4,4"/>
         </Style>
     </Window.Resources>
-
+    
     <Grid>
         <Grid Margin="10">
             <Grid.ColumnDefinitions>
@@ -33,8 +33,8 @@
                                 VerticalContentAlignment="Top" Foreground="White" Background="Transparent" Content=""  BorderThickness="2"
                                 BorderBrush="LightGray" FontWeight="Bold" />
                     </StackPanel>
-                    <ListView x:Name="projectsList" Margin="10,100,0,235" Background="LightGray" HorizontalAlignment="Left" Width="218" 
-                                VirtualizingPanel.IsVirtualizing="False" MouseLeftButtonUp="projectsList_SelectionChanged">
+                    <ListView x:Name="projectsList" Margin="10,100,10,235" Background="LightGray" 
+                                VirtualizingPanel.IsVirtualizing="False" MouseLeftButtonUp="projectsList_SelectionChanged" SizeChanged="ProjectsView_SizeChanged">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Header="PROJELER" Width="195" >
@@ -52,7 +52,7 @@
                     </ListView>
                     <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Center" Height="150">
                         <Button x:Name="downloadButton" VerticalAlignment="Center" Width="80" Margin="0,0,0,0" Height="80" Click="AddEnumFile_Clicked" Background="Transparent" BorderThickness="0">
-                            <Image x:Name="edit" Source="C:\Users\PC_4232\Desktop\Mehmet\download2.png" Height="80" />
+                            <Image x:Name="addEnumIcon" Height="80" />
                         </Button>
                         <Label Margin="0,0,0,0" Content="Enum Dosyasını Değiştir" HorizontalAlignment="Center" FontSize="16" Foreground="White"/>
                     </StackPanel>
@@ -68,8 +68,7 @@
                             </Grid.ColumnDefinitions>
 
                             <ListView Name="projectListView" Grid.Column="0" Margin="0,10,10,10" Background="LightGray" BorderBrush="Black" BorderThickness="2" 
-                                        VirtualizingPanel.IsVirtualizing="False" IsTextSearchEnabled="True" >
-
+                                        VirtualizingPanel.IsVirtualizing="False" IsTextSearchEnabled="True" SizeChanged="ListView_SizeChanged">
                                 <ListView.View >
 
                                     <GridView VirtualizingPanel.ScrollUnit="Item" VirtualizingPanel.VirtualizationMode="Recycling">
@@ -143,7 +142,7 @@
                                                 <DataTemplate>
                                                     <Button x:Name="updateButton" Click="UpdateClick" Background="Transparent" BorderThickness="0">
                                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Background="Transparent">
-                                                            <Image x:Name="edit" Source="C:\Users\PC_4232\Desktop\Mehmet\edit.png" Width="40" Height="40" />
+                                                            <Image x:Name="edit" Width="40" Height="40" />
                                                         </StackPanel>
                                                     </Button>
                                                 </DataTemplate>
