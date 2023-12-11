@@ -35,6 +35,9 @@ namespace PacketAnalysisApp
     {
         SettingsWindow settingsWindow = new SettingsWindow();
 
+        Popup popUp = new Popup();
+        bool resultExport = false;
+        bool resultDel = false;
         string nowDate = null;
         bool appClosing = false;
         bool writeFinished = false;
@@ -47,7 +50,7 @@ namespace PacketAnalysisApp
 
         string paket = "";
 
-        bool closing = true;
+        bool closing = false;
 
         byte[] Key = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20 };
         byte[] IV = new byte[] { 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30 };
@@ -159,6 +162,8 @@ namespace PacketAnalysisApp
             settingsWindow.ChartUpdating += ChartUpdate;
             saveLength = settingsWindow.lenChart;
             tempLength = settingsWindow.lenBuffer;
+
+            popUp.PopupEvent += resultSet;
 
             writeFinished = dataKeeper.writeFinished;
 
@@ -383,10 +388,27 @@ namespace PacketAnalysisApp
 
             dataGrid.Dispatcher.Invoke(new Action(() =>
             {
-                Microsoft.Win32.SaveFileDialog openFileDlg = new Microsoft.Win32.SaveFileDialog();
-                openFileDlg.FileName = settingsWindow.packetName + ".xlsx";
+                bool result = false;
 
-                Nullable<bool> result = openFileDlg.ShowDialog();
+                if (!closing)
+                {
+                    Microsoft.Win32.SaveFileDialog openFileDlg = new Microsoft.Win32.SaveFileDialog();
+                    openFileDlg.FileName = settingsWindow.packetName + ".xlsx";
+
+                    result = (bool)openFileDlg.ShowDialog();
+                    savePath = openFileDlg.FileName;
+                }
+                else
+                {
+                    result = true;
+                    savePath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis");
+                    savePath = savePath + "\\DATA\\Export\\";
+                    if(!Directory.Exists(savePath))
+                    {
+                        Directory.CreateDirectory(savePath);
+                    }
+                    savePath = savePath + settingsWindow.packetName + "_" + dataKeeper.nowDate;
+                }
 
                 if (result == true)
                 {
@@ -396,7 +418,7 @@ namespace PacketAnalysisApp
 
                     logLabel.Content = "Veriler Dışarıya Aktarılıyor...";
 
-                    savePath = openFileDlg.FileName;
+                    
                     Task.Run(() =>
                     {
                         dataGrid.Dispatcher.Invoke(() =>
@@ -774,7 +796,7 @@ namespace PacketAnalysisApp
                             dataKeeper.writeData("FREKANS", fileName, tempLineValuesList[paket_proje].ToList(), tempChartXLabels[paket_proje].ToList());
                             tempLineValuesList[paket_proje].Clear();
                             tempChartXLabels[paket_proje].Clear();
-                            setExpectedAnalysis(paket_proje, "FREKANS");
+                            //setExpectedAnalysis(paket_proje, "FREKANS");
                         }
 
                         setChartStatues(chartList[totalReceivedPacket.Keys.ElementAt(i)], lineValuesList[totalReceivedPacket.Keys.ElementAt(i)],
@@ -1488,44 +1510,77 @@ namespace PacketAnalysisApp
                             }
                         }
                         StackPanel expectedPanel = (type == "FREKANS") ? freqLabelStacks[key] : dimLabelStacks[key];
-                        setExpectedLabel(expectedPanel, total, eq, down, up, zero, type, key);
+                        //setExpectedLabel(expectedPanel, total, eq, down, up, zero, type, key);
                     }
                 }
             });
         }
 
-        public void setExpectedLabel(StackPanel stacks, double packetTotal, int eq, int down, int up, int zero, string type, string[] key)
+        //public void setExpectedLabel(StackPanel stacks, double packetTotal, int eq, int down, int up, int zero, string type, string[] key)
+        //{
+        //    dataGrid.Dispatcher.Invoke(() =>
+        //    {
+        //        if (stacks.Children.Count > 0 & !rowColorStart)
+        //        {
+        //            ((Label)((StackPanel)stacks.Children[0]).Children[0]).Content = type.ToLower() + " sıfır : " + zero.ToString()
+        //                                                + " (%" + ((double)(zero / packetTotal) * 100).ToString("F2") + ")";
+        //            ((Label)((StackPanel)stacks.Children[0]).Children[0]).Background = rowColor[key[0]];
+        //            ((Label)((StackPanel)stacks.Children[0]).Children[0]).BorderBrush = Brushes.WhiteSmoke;
+        //            ((Label)((StackPanel)stacks.Children[0]).Children[0]).BorderThickness = new Thickness(2, 2, 2, 1);
+
+        //            ((Label)((StackPanel)stacks.Children[0]).Children[1]).Content = type.ToLower() + " beklenen " + type.ToLower() + "ta : " + eq.ToString()
+        //                                                + " (%" + ((double)(eq / packetTotal) * 100).ToString("F2") + ")";
+        //            ((Label)((StackPanel)stacks.Children[0]).Children[1]).Background = rowColor[key[0]];
+        //            ((Label)((StackPanel)stacks.Children[0]).Children[1]).BorderBrush = Brushes.WhiteSmoke;
+        //            ((Label)((StackPanel)stacks.Children[0]).Children[1]).BorderThickness = new Thickness(2, 1, 2, 2);
+
+        //            ((Label)((StackPanel)stacks.Children[1]).Children[0]).Content = type.ToLower() + " beklenen " + type.ToLower() + " üstünde : " + up.ToString()
+        //                                                                        + " (%" + ((double)(up / packetTotal) * 100).ToString("F2") + ")";
+        //            ((Label)((StackPanel)stacks.Children[1]).Children[0]).Background = rowColor[key[0]];
+        //            ((Label)((StackPanel)stacks.Children[1]).Children[0]).BorderBrush = Brushes.WhiteSmoke;
+        //            ((Label)((StackPanel)stacks.Children[1]).Children[0]).BorderThickness = new Thickness(2, 2, 2, 1);
+
+        //            ((Label)((StackPanel)stacks.Children[1]).Children[1]).Content = type.ToLower() + " beklenen " + type.ToLower() + " altında : " + down.ToString()
+        //                                                + " (%" + ((double)(down / packetTotal) * 100).ToString("F2") + ")";
+        //            ((Label)((StackPanel)stacks.Children[1]).Children[1]).Background = rowColor[key[0]];
+        //            ((Label)((StackPanel)stacks.Children[1]).Children[1]).BorderBrush = Brushes.WhiteSmoke;
+        //            ((Label)((StackPanel)stacks.Children[1]).Children[1]).BorderThickness = new Thickness(2, 1, 2, 2);
+
+        //        }
+        //    });
+        //}
+
+        public void setExpectedLabel(string[] key, Dictionary<string[], ChartValues<int>> values, Dictionary<string[], StackPanel> stacks,
+                                 Dictionary<string[], int> expectedValue, string type)
         {
-            dataGrid.Dispatcher.Invoke(() =>
+            if (stacks[key].Children.Count > 0 & !rowColorStart)
             {
-                if (stacks.Children.Count > 0 & !rowColorStart)
-                {
-                    ((Label)((StackPanel)stacks.Children[0]).Children[0]).Content = type.ToLower() + " sıfır : " + zero.ToString()
-                                                        + " (%" + ((double)(zero / packetTotal) * 100).ToString("F2") + ")";
-                    ((Label)((StackPanel)stacks.Children[0]).Children[0]).Background = rowColor[key[0]];
-                    ((Label)((StackPanel)stacks.Children[0]).Children[0]).BorderBrush = Brushes.WhiteSmoke;
-                    ((Label)((StackPanel)stacks.Children[0]).Children[0]).BorderThickness = new Thickness(2, 2, 2, 1);
-
-                    ((Label)((StackPanel)stacks.Children[0]).Children[1]).Content = type.ToLower() + " beklenen " + type.ToLower() + "ta : " + eq.ToString()
-                                                        + " (%" + ((double)(eq / packetTotal) * 100).ToString("F2") + ")";
-                    ((Label)((StackPanel)stacks.Children[0]).Children[1]).Background = rowColor[key[0]];
-                    ((Label)((StackPanel)stacks.Children[0]).Children[1]).BorderBrush = Brushes.WhiteSmoke;
-                    ((Label)((StackPanel)stacks.Children[0]).Children[1]).BorderThickness = new Thickness(2, 1, 2, 2);
-
-                    ((Label)((StackPanel)stacks.Children[1]).Children[0]).Content = type.ToLower() + " beklenen " + type.ToLower() + " üstünde : " + up.ToString()
-                                                                                + " (%" + ((double)(up / packetTotal) * 100).ToString("F2") + ")";
-                    ((Label)((StackPanel)stacks.Children[1]).Children[0]).Background = rowColor[key[0]];
-                    ((Label)((StackPanel)stacks.Children[1]).Children[0]).BorderBrush = Brushes.WhiteSmoke;
-                    ((Label)((StackPanel)stacks.Children[1]).Children[0]).BorderThickness = new Thickness(2, 2, 2, 1);
-
-                    ((Label)((StackPanel)stacks.Children[1]).Children[1]).Content = type.ToLower() + " beklenen " + type.ToLower() + " altında : " + down.ToString()
-                                                        + " (%" + ((double)(down / packetTotal) * 100).ToString("F2") + ")";
-                    ((Label)((StackPanel)stacks.Children[1]).Children[1]).Background = rowColor[key[0]];
-                    ((Label)((StackPanel)stacks.Children[1]).Children[1]).BorderBrush = Brushes.WhiteSmoke;
-                    ((Label)((StackPanel)stacks.Children[1]).Children[1]).BorderThickness = new Thickness(2, 1, 2, 2);
-
-                }
-            });
+                double packetTotal = values[key].Count;
+                int eq = values[key].Count(chartValue => chartValue == expectedValue[key]);
+                int down = values[key].Count(chartValue => chartValue < expectedValue[key]);
+                int up = values[key].Count(chartValue => chartValue > expectedValue[key]);
+                int zero = values[key].Count(chartValue => chartValue == 0);
+                ((Label)((StackPanel)stacks[key].Children[0]).Children[0]).Content = type + " Sıfır : " + zero.ToString()
+                                                    + " (%" + ((double)(zero / packetTotal) * 100).ToString("F2") + ")";
+                ((Label)((StackPanel)stacks[key].Children[0]).Children[0]).Background = rowColor[key[0]];
+                ((Label)((StackPanel)stacks[key].Children[0]).Children[0]).BorderBrush = Brushes.WhiteSmoke;
+                ((Label)((StackPanel)stacks[key].Children[0]).Children[0]).BorderThickness = new Thickness(2, 2, 2, 1);
+                ((Label)((StackPanel)stacks[key].Children[0]).Children[1]).Content = type + " Beklenen " + type + "ta : " + eq.ToString()
+                                                    + " (%" + ((double)(eq / packetTotal) * 100).ToString("F2") + ")";
+                ((Label)((StackPanel)stacks[key].Children[0]).Children[1]).Background = rowColor[key[0]];
+                ((Label)((StackPanel)stacks[key].Children[0]).Children[1]).BorderBrush = Brushes.WhiteSmoke;
+                ((Label)((StackPanel)stacks[key].Children[0]).Children[1]).BorderThickness = new Thickness(2, 1, 2, 2);
+                ((Label)((StackPanel)stacks[key].Children[1]).Children[0]).Content = type + " Beklenen " + type + " Üstünde : " + up.ToString()
+                                                                            + " (%" + ((double)(up / packetTotal) * 100).ToString("F2") + ")";
+                ((Label)((StackPanel)stacks[key].Children[1]).Children[0]).Background = rowColor[key[0]];
+                ((Label)((StackPanel)stacks[key].Children[1]).Children[0]).BorderBrush = Brushes.WhiteSmoke;
+                ((Label)((StackPanel)stacks[key].Children[1]).Children[0]).BorderThickness = new Thickness(2, 2, 2, 1);
+                ((Label)((StackPanel)stacks[key].Children[1]).Children[1]).Content = type + " Beklenen " + type + " Altında : " + down.ToString()
+                                                    + " (%" + ((double)(down / packetTotal) * 100).ToString("F2") + ")";
+                ((Label)((StackPanel)stacks[key].Children[1]).Children[1]).Background = rowColor[key[0]];
+                ((Label)((StackPanel)stacks[key].Children[1]).Children[1]).BorderBrush = Brushes.WhiteSmoke;
+                ((Label)((StackPanel)stacks[key].Children[1]).Children[1]).BorderThickness = new Thickness(2, 1, 2, 2);
+            }
         }
 
         public void writeTempData()
@@ -1543,7 +1598,6 @@ namespace PacketAnalysisApp
                 tempLineValuesList[paket_proje].Clear();
                 writeFinished = true;
             }
-
         }
 
         //Paketlerin alındığı fonksiyon bir thread'te çalışır
@@ -1568,8 +1622,8 @@ namespace PacketAnalysisApp
                 int total = 0;
                 dataGrid.Dispatcher.Invoke(new System.Action(() =>
                 {
-                    //setExpectedLabel(paket_proje, lineValuesList, freqLabelStacks, expectedFreq, "Frekans");
-                    //setExpectedLabel(paket_proje, dimLineValuesList, dimLabelStacks, expectedDim, "Boyut");
+                    setExpectedLabel(paket_proje, lineValuesList, freqLabelStacks, expectedFreq, "Frekans");
+                    setExpectedLabel(paket_proje, dimLineValuesList, dimLabelStacks, expectedDim, "Boyut");
 
                     string fileName = paket_proje[0] + "_" + paket_proje[1];
 
@@ -1603,7 +1657,7 @@ namespace PacketAnalysisApp
                         dataKeeper.writeData("BOYUT", fileName, tempDimLineValuesList[paket_proje].ToList(), tempDimChartXLabels[paket_proje].ToList());
                         tempDimChartXLabels[paket_proje].Clear();
                         tempDimLineValuesList[paket_proje].Clear();
-                        setExpectedAnalysis(paket_proje, "BOYUT");
+                        //setExpectedAnalysis(paket_proje, "BOYUT");
                     }
 
                     //if (dataKeeper.writeFinished)
@@ -1676,7 +1730,6 @@ namespace PacketAnalysisApp
         }
 
         //Program kapandığında oluşan event
-
         delegate void AppClosedEventHandler(object sender, EventArgs e);
         event AppClosedEventHandler AppClosed;  
         private void ExportFinished()
@@ -1688,27 +1741,60 @@ namespace PacketAnalysisApp
 
             if (appClosing)
             {
-                MessageBoxResult resultSave = MessageBox.Show("Kaydedilen Veriler Silinsin Mi?", "", MessageBoxButton.YesNoCancel);
-                if (resultSave == MessageBoxResult.Yes)
+                if (popUp.resultDelFile)
                 {
-                    writeFinished = false;                    
+                    writeFinished = false;
                     string folderPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + paketName + "\\" + nowDate);
                     Directory.Delete(folderPath, true);
-                    AppClosed?.Invoke(sender,e);
+                    AppClosed?.Invoke(sender, e);
                 }
-                else if (resultSave == MessageBoxResult.No)
+                else if (!popUp.resultDelFile)
                 {
                     exportAll();
                     AppClosed?.Invoke(sender, e);
                 }
                 else { };
             }
+
+            //if (appClosing)
+            //{
+            //    MessageBoxResult resultSave = MessageBox.Show("Kaydedilen Veriler Silinsin Mi?", "", MessageBoxButton.YesNoCancel);
+            //    if (resultSave == MessageBoxResult.Yes)
+            //    {
+            //        writeFinished = false;                    
+            //        string folderPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + paketName + "\\" + nowDate);
+            //        Directory.Delete(folderPath, true);
+            //        AppClosed?.Invoke(sender,e);
+            //    }
+            //    else if (resultSave == MessageBoxResult.No)
+            //    {
+            //        exportAll();
+            //        AppClosed?.Invoke(sender, e);
+            //    }
+            //    else { };
+            //}
         }
         private void MainAppClosed(object sender = null, EventArgs e=null)
         {
             subscriber.Abort();
             subSocket.Dispose();
             Environment.Exit(0);
+        }
+
+        public void resultSet(object sender, RoutedEventArgs e)
+        {
+            if (popUp.resultExport)
+            {
+                this.Visibility = Visibility.Collapsed;
+                popUp.progressBar.Visibility = Visibility.Visible;
+                popUp.pText.Visibility = Visibility.Visible;
+                exportClick(sender, e);
+            }
+            else if (!popUp.resultExport)
+            {
+                //exportAll();
+                ExportFinished();
+            }
         }
 
         private void MainAppClosing(object sender, CancelEventArgs e)
@@ -1719,23 +1805,34 @@ namespace PacketAnalysisApp
                 e.Cancel = true;
                 appClosing = true;
 
+                popUp = new Popup();
+                popUp.PopupEvent += resultSet;
+                popUp.Closed += PopUpClosed;
+                popUp.Show();
+                
                 //exportAll();
 
-                MessageBoxResult resultExport = MessageBox.Show("Kaydedilen Veriler Dışarı Aktarılsın mı?", "", MessageBoxButton.YesNo);
-                if (resultExport == MessageBoxResult.Yes)
-                {
-                    RoutedEventArgs re = new RoutedEventArgs();
-                    exportClick(sender, re);
-                }
-                else if (resultExport == MessageBoxResult.No)
-                {
-                    ExportFinished();
-                }
+                //MessageBoxResult resultExport = MessageBox.Show("Kaydedilen Veriler Dışarı Aktarılsın mı?", "", MessageBoxButton.YesNo);
+                //if (resultExport == MessageBoxResult.Yes)
+                //{
+                //    RoutedEventArgs re = new RoutedEventArgs();
+                //    exportClick(sender, re);
+                //}
+                //else if (resultExport == MessageBoxResult.No)
+                //{
+                //    ExportFinished();
+                //}
             }
             else
             {
                 MainAppClosed(sender, e);
             }
+        }
+
+        private void PopUpClosed(object sender, EventArgs e)
+        {
+            closing = false;
+            appClosing = false;
         }
 
         //Grafikteki ZOOM- butonuna tıklandığında oluşan event

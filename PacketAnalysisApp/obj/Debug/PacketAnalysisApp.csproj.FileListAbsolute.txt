@@ -174,3 +174,5 @@ C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\Wp
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\WpfAnimatedGif.xml
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\obj\Debug\SettingsWindow.g.cs
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\obj\Debug\SettingsWindow.baml
+C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\obj\Debug\Popup.g.cs
+C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\obj\Debug\Popup.baml

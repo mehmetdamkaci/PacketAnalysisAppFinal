@@ -217,6 +217,8 @@
 
         </Grid>
 
+        <Popup Width ="150" Height="100"></Popup>
+
         <Border CornerRadius="5" BorderBrush="Black" BorderThickness="1" Background="LightGray" Height="25" VerticalAlignment="Top" Margin="0,-19,9,0" HorizontalAlignment="Right" Width="200" Grid.Column="1">
             <StackPanel Margin="0,0,10,0" Height="50" VerticalAlignment="Top" HorizontalAlignment="Right" Width="214">
                 <TextBox x:Name="searchBox" Text="Ara" TextWrapping="Wrap" Background="LightGray" BorderThickness="0"
