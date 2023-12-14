@@ -52,6 +52,7 @@ namespace PacketAnalysisApp
         public int lenChart;
         public int lenBuffer;
         public string jsonPath = "PacketConfig.json";
+        public string nowDate;
         public CONFIG configData;
         
         public Dictionary<string, Dictionary<int, string>> enumStruct;
@@ -59,6 +60,7 @@ namespace PacketAnalysisApp
         public Dictionary<string[], int> expectedDim = new Dictionary<string[], int>(new StringArrayComparer());
         public Dictionary<string[], int[]> mergeExpected;
         public Dictionary<string, SolidColorBrush> colors;
+
 
         Dictionary<string[], int[]> mergedExpectedDict;
         Dictionary<string, string> matchedEnums;
@@ -71,10 +73,11 @@ namespace PacketAnalysisApp
         string[] iconNames = { "edit" , "tick"};
         string initIconName = "edit";
         
-
         
-        public SettingsWindow()
+        public SettingsWindow(string jsonPath = "PacketConfig.json")
         {
+            InitializeComponent();
+            this.jsonPath = jsonPath;
             string json = File.ReadAllText(jsonPath);
             configData = JsonConvert.DeserializeObject<CONFIG>(json);
             packetName = configData.Name;
@@ -83,14 +86,19 @@ namespace PacketAnalysisApp
             lenBuffer = configData.bufferLength;
             enumText = File.ReadAllText(packetPath);
 
-            InitializeComponent();
-
             packetNameLabel.Content = packetName;
             chartLengthBox.Text = lenChart.ToString();
             bufferLengthBox.Text = lenBuffer.ToString();
             ProcessEnumCode(enumText, false);
             InitExpectedValue();
-            
+
+        }
+
+        public void CopyConfigFile() 
+        {
+            string configPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + packetName + "\\" + nowDate + "\\PacketConfig.json");
+            if (File.Exists(configPath)) File.Copy(jsonPath, configPath, true);
+            else File.Copy(jsonPath, configPath);
         }
 
         public void InitIcon()
@@ -136,7 +144,7 @@ namespace PacketAnalysisApp
             }
             //InitIcon();
             //setColor();
-            
+            InitIcon();
         }
 
 
@@ -187,7 +195,7 @@ namespace PacketAnalysisApp
 
             projectListView.ItemsSource = mergedExpectedDict.ToList();
             projectsList.ItemsSource = enumStruct[packetName].Values.ToList();
-                    
+
         }
 
         public delegate void ChartUpdatingEventHandler (object sender, RoutedEventArgs e);
@@ -201,6 +209,8 @@ namespace PacketAnalysisApp
             configData.bufferLength = lenBuffer;
 
             File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
+            string configPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + packetName + "\\" + nowDate + "\\PackageConfig.json");
+            File.Copy(jsonPath, configPath, true);
 
             ChartUpdating?.Invoke(sender, e);
 
@@ -293,7 +303,7 @@ namespace PacketAnalysisApp
 
             if (privMatched)
             {
-                CreateEnumMatchGrid();
+                CreateEnumMatchGrid();                
             }
             
         }
@@ -623,6 +633,9 @@ namespace PacketAnalysisApp
             configData.Path = path;
             configData.Name = packetName;
             File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
+            string configPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + packetName + "\\" + nowDate + "\\PacketConfig.json");
+            if(File.Exists(configPath)) File.Copy(jsonPath, configPath, true);
+            else File.Copy(jsonPath, configPath);
 
             NewExpectedValue(expectedFreq, "FREQ");
             NewExpectedValue(expectedDim, "DIM");
@@ -639,7 +652,7 @@ namespace PacketAnalysisApp
             matchAndExpectedGrid.Children[3].Visibility = Visibility.Collapsed;
             matchAndExpectedGrid.Children[1].Visibility = Visibility.Collapsed;
             backButton.Visibility = Visibility.Collapsed;
-            expectedGrid.Visibility = Visibility.Visible;
+            expectedGrid.Visibility = Visibility.Visible;            
 
             SaveClickedEvent?.Invoke(sender, e);
         }
@@ -735,11 +748,15 @@ namespace PacketAnalysisApp
             {
                 configData.Freq = tempExpectedValues;
                 File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
+                string configPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + packetName + "\\" + nowDate + "\\PacketConfig.json");
+                File.Copy(jsonPath, configPath, true);
             }
             else if(key == "DIM")
             {
                 configData.Dim = tempExpectedValues;
                 File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
+                string configPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + packetName + "\\" + nowDate + "\\PacketConfig.json");
+                File.Copy(jsonPath, configPath, true);
             }
 
         }
@@ -980,6 +997,9 @@ namespace PacketAnalysisApp
                     _packetProje = packetProje;
 
                     File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
+                    string configPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + packetName + "\\" + nowDate + "\\PackageConfig.json");
+                    File.Copy(jsonPath, configPath, true);
+
                     UpdateClickedEvent?.Invoke(sender, e);
                 }
 

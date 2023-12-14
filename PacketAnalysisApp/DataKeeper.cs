@@ -79,6 +79,22 @@ namespace PacketAnalysisApp
 
         }
 
+        public void savedDataMode(string date)
+        {
+            nowDate = date;
+            if (!Directory.Exists(mainPath))
+            {
+                Directory.CreateDirectory(mainPath);
+            }
+
+            dataPath = Path.Combine(mainPath, "DATA");
+            packetPath = Path.Combine(dataPath, packetName);
+
+            string datePath = Path.Combine(packetPath, nowDate);
+
+            freqPath = Path.Combine(datePath, "FREKANS");
+            dimPath = Path.Combine(datePath, "BOYUT");
+        }
 
         public void writeData(string type, string fileName, List<int> YValues, List<string> XValues)
         {
@@ -338,6 +354,74 @@ namespace PacketAnalysisApp
                     chartSheet.Row(countChartRow).Style.Fill.BackgroundColor.SetColor(ColorConverter(colors[colors.ElementAt(i).Key]));
                 }
             }
+
+        }
+
+        public void ChartExport(string type, string fileName, string savePath)
+        {
+
+            //************ EXCEL TANIMLAMALARI ********************
+            string typePath = (type == "FREKANS") ? freqPath : dimPath;
+            var package = new ExcelPackage();
+            var worksheet = package.Workbook.Worksheets.Add(type + " GRAFİĞİ");
+
+            //************ EXPORT İÇİN KOMPONENETLERİN TANIMLANMASI ********************
+
+            //************ EXCEL CHART TANIMLAMALARI ********************
+            var chart = (ExcelLineChart)worksheet.Drawings.AddChart("Chart", eChartType.LineMarkers);
+            chart.SetPosition(3 * 20, 9 * 20);
+            chart.SetSize(1500, 300);
+            chart.Name = fileName;
+
+            //************ DOSYA OKUNMASI VE EXCELE YAZILMASI ********************
+            setCellStyle(worksheet, 1, 4, "TOPLAM", Brushes.LightGray);
+            using (StreamReader sr = new StreamReader(Path.Combine(typePath, fileName + extention)))
+            {
+                int row = 1;
+                while (!sr.EndOfStream)
+                {
+                    string[] data = sr.ReadLine().Split(',');
+                    object value = null;
+                    try
+                    {
+                        value = int.Parse(data[1]);
+                    }
+                    catch
+                    {
+                        value = data[1];
+                    }
+                    setCellStyle(worksheet, row, 1, data[0]);
+                    setCellStyle(worksheet, row, 2, value);
+
+                    row++;
+                }
+            }
+
+            worksheet.Cells.AutoFitColumns();
+            int end = (2 < worksheet.Dimension.End.Row) ? worksheet.Dimension.End.Row : 2;
+            var scale = worksheet.ConditionalFormatting.AddTwoColorScale(worksheet.Cells[2, 2, end, 2]);
+            scale.LowValue.Color = System.Drawing.Color.FromArgb(255, 255, 192, 192);
+            scale.HighValue.Color = System.Drawing.Color.Green;
+
+            //************ EXCEL CHART DEĞER GİRİMİ ********************
+            chart.Series.Add(worksheet.Cells[2, 2, worksheet.Dimension.End.Row, 2], worksheet.Cells[2, 1, end, 1]);
+            chart.Series[0].Header = fileName;
+
+            //************ EXCEL TOPLAM SÜTUNU AYARLANMASI ********************
+            worksheet.Cells[2, 4].Formula = "Sum(" + worksheet.Cells[2, 2].Address +
+                ":" + worksheet.Cells[worksheet.Dimension.End.Row, 2].Address + ")";
+            worksheet.Cells[2, 4].Style.Fill.PatternType = ExcelFillStyle.Solid;
+            worksheet.Cells[2, 4].Style.Fill.BackgroundColor.SetColor(ColorConverter(Brushes.Green));
+
+            //************ EXCEL DOSYANIN KAYDEDİLMESİ ********************
+            if (new FileInfo(@savePath) != null)
+            {
+                package.SaveAs(new FileInfo(@savePath));
+            }
+
+            //************ EXCEL DOSYANIN KAYDEDİLDİĞİNİ GÖSTEREN ANİMASYON ********************
+
+            package.Dispose();
 
         }
 

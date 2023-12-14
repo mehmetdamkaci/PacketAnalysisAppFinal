@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:PacketAnalysisApp"        
         xmlns:gif="http://wpfanimatedgif.codeplex.com"
         xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf" 
-        WindowStartupLocation="CenterScreen" Width="1080" Height="720"
+        WindowStartupLocation="CenterScreen" Width="1441" Height="720"
         AllowsTransparency="False" Background="#333333" Closed="MainAppClosed" Closing="MainAppClosing">
 
     <Window.Resources>
@@ -14,13 +14,13 @@
         <local:KeyValueConverterDim x:Key="KeyValueConverterDim"/>
     </Window.Resources>
 
-
-    <Grid  x:Name="mainGrid" Margin="54,36,41,10">
+    <Grid  x:Name="mainGrid" Margin="54,36,0,10">
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"></ColumnDefinition>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="0*"></ColumnDefinition>
+            <ColumnDefinition Width="630*"/>
+            <ColumnDefinition Width="225*"/>
+            <ColumnDefinition Width="488*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
 
         <Grid.Resources>
@@ -39,7 +39,7 @@
             </Style>
         </Grid.Resources>
 
-        <Grid Margin="-32,50,40,0" Grid.ColumnSpan="2">
+        <Grid Margin="-32,50,40,0" Grid.ColumnSpan="3">
             <Grid.Resources>
                 <Style x:Key="DataGridColumnHeaderCenter" TargetType="DataGridColumnHeader">
                     <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -56,11 +56,15 @@
                     <Setter Property="Height" Value="20"/>
                 </Style>
             </Grid.Resources>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="887*"/>
+                <ColumnDefinition Width="56*"/>
+            </Grid.ColumnDefinitions>
             <DataGrid Name="dataGrid" AutoGenerateColumns="False" Background="#FF696969" AlternatingRowBackground="LightGray" AlternationCount="2"
                       ItemsSource="{Binding Path=Packets}" SelectedItem="{Binding Path=paketID}" IsReadOnly="True" BorderThickness="0" 
-                      CellStyle="{StaticResource Body_Content_DataGrid_Centering}" Margin="32,-32,-32,34" SelectionUnit="FullRow"
+                      CellStyle="{StaticResource Body_Content_DataGrid_Centering}" Margin="32,-32,-31,34" SelectionUnit="FullRow"
                       VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Item" EnableRowVirtualization="False"
-                      CanUserSortColumns="False">
+                      CanUserSortColumns="False" Grid.ColumnSpan="2">
                 <DataGrid.Resources>
                     <Style TargetType="{x:Type DataGridColumnHeader}">
                         <Setter Property="Background" Value="Black"/>
@@ -205,21 +209,21 @@
             </DataGrid>
             <Image x:Name="loading" gif:ImageBehavior.RepeatBehavior="Forever"
                 VerticalAlignment="Bottom" HorizontalAlignment="Right"
-                   Height="60" Width ="100" Margin="0,0,-32,-19" Visibility="Collapsed"/>
+                   Height="60" Width ="100" Margin="0,0,-25,-19" Visibility="Collapsed" Grid.ColumnSpan="2"/>
 
-            <ProgressBar x:Name="progressBar" Visibility="Collapsed" Height="20" Width ="150" Margin="0,0,-32,0" 
+            <ProgressBar x:Name="progressBar" Visibility="Collapsed" Height="20" Width ="150" Margin="0,0,24,0" 
                             VerticalAlignment="Bottom" HorizontalAlignment="Right" IsIndeterminate="True"
-                            Foreground="red"/>
-            <Label x:Name="exportLabel" Content="Tablo Dışarı Aktarıldı." Margin="0,0,-32,3" HorizontalAlignment="Right" Width="130" Height="26"  
-                VerticalAlignment="Bottom" FontWeight="Bold" Foreground="White" Visibility="Collapsed"/>
+                            Foreground="red" Grid.ColumnSpan="2"/>
+            <Label x:Name="exportLabel" Content="Tablo Dışarı Aktarıldı." Margin="0,0,24,3" HorizontalAlignment="Right" Width="130" Height="26"  
+                VerticalAlignment="Bottom" FontWeight="Bold" Foreground="White" Visibility="Collapsed" Grid.ColumnSpan="2"/>
             <Label x:Name="logLabel" Content="" HorizontalContentAlignment="Center" Foreground="WhiteSmoke" Width="649" HorizontalAlignment="Center" Height="26" VerticalAlignment="Bottom" />
             <!--<TextBox x:Name="tbox" HorizontalAlignment="Left" Margin="324,254,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="315" Height="249"/>-->
 
         </Grid>
 
-        <Popup Width ="150" Height="100"></Popup>
+        <Popup Grid.Column="1" Margin="5,279,556,279"/>
 
-        <Border CornerRadius="5" BorderBrush="Black" BorderThickness="1" Background="LightGray" Height="25" VerticalAlignment="Top" Margin="0,-19,9,0" HorizontalAlignment="Right" Width="200" Grid.Column="1">
+        <Border CornerRadius="5" BorderBrush="Black" BorderThickness="1" Background="LightGray" Height="24" VerticalAlignment="Top" Margin="0,-20,11,0" HorizontalAlignment="Right" Width="200" Grid.Column="2">
             <StackPanel Margin="0,0,10,0" Height="50" VerticalAlignment="Top" HorizontalAlignment="Right" Width="214">
                 <TextBox x:Name="searchBox" Text="Ara" TextWrapping="Wrap" Background="LightGray" BorderThickness="0"
                                  FontWeight="Bold" VerticalContentAlignment="Center"
@@ -227,17 +231,17 @@
             </StackPanel>
         </Border>
 
-        <Border CornerRadius="5" BorderBrush="Black" BorderThickness="1" Background="LightGray" Height="25" VerticalAlignment="Top" Margin="22,-16,0,0" HorizontalAlignment="Left" Width="60" Grid.ColumnSpan="2">
+        <Border CornerRadius="5" BorderBrush="Black" BorderThickness="1" Background="LightGray" Height="24" VerticalAlignment="Top" Margin="6,-20,0,0" HorizontalAlignment="Left" Width="60" Grid.Column="1">
             <Button Content="Ayarlar" Background="LightGray" Margin="5,0,3,0" Height="25" 
                     BorderThickness="0" VerticalAlignment="Center" Click="AyarlarClicked"/>
         </Border>
 
 
 
-        <StackPanel Grid.Column="2" Orientation="Vertical">
+        <StackPanel Grid.Column="3" Orientation="Vertical" Margin="0,0,-5,0" HorizontalAlignment="Center" Width="auto">
             <lvc:PieChart x:Name="pieChart" Foreground="AliceBlue"
                         InnerRadius="45" LegendLocation="None" Hoverable="False" Series="{Binding SeriesCollection}" 
-                        Height="314" DisableAnimations="True" Margin="0,0,0,80" DataClick="PieChartClick" Width="325" >
+                        Height="350" DisableAnimations="True" Margin="0,0,0,80" DataClick="PieChartClick" Width="500" >
                 <lvc:PieChart.CacheMode>
                     <BitmapCache EnableClearType="False" 
                                  RenderAtScale="1"
@@ -245,15 +249,15 @@
                 </lvc:PieChart.CacheMode>
             </lvc:PieChart>
         </StackPanel>
-        <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Column="2" Margin="0,329,0,212">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Column="3" Margin="10,366,0,212">
             <StackPanel x:Name="buttonPiePanel" VerticalAlignment="Center">
 
             </StackPanel>
         </ScrollViewer>
 
-        <StackPanel Grid.Column="2" Height="658" VerticalAlignment="Bottom">
-            <Border x:Name="borderSocketPanel" CornerRadius="20" BorderBrush="Black" BorderThickness="1" Background="Gray"  VerticalAlignment="Top" Margin="0,480,0,0" 
-                        HorizontalAlignment="Center"  Grid.Column="2">
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="0,10,11,-10" HorizontalAlignment="Center">
+            <Border x:Name="borderSocketPanel" CornerRadius="20" BorderBrush="Black" BorderThickness="1" Background="Gray"  VerticalAlignment="Bottom" Margin="0,0,0,32" 
+                        HorizontalAlignment="Left"  Grid.Column="2">
                 <StackPanel x:Name="socketPanel" Orientation="Vertical" HorizontalAlignment="Center" Background="Transparent">
                     <StackPanel Margin="0,20,0,0" Orientation="Horizontal">
                         <Label Margin="26,0,0,0"  Content="IP" Foreground="White" FontSize="16" FontWeight="Bold"/>
@@ -269,9 +273,19 @@
                     </StackPanel>
                 </StackPanel>
             </Border>
+            <Border Margin="10,0,0,33" VerticalAlignment="Bottom" CornerRadius="20" Background="Gray" Width="auto" BorderBrush="Black" BorderThickness="1">
+                <StackPanel Margin="10,50,10,20" Orientation="Vertical" VerticalAlignment="Top">
+                    <Label x:Name="dateLabel" Content="Tarih : " FontWeight="Bold" Foreground="White"/>
+                    <StackPanel Orientation="Horizontal" RenderTransformOrigin="0.533,2.328" Margin="0,25,0,0">
+                        <Button x:Name="dataLoad" Margin="0,0,10,0" Content="Veri Yükle" FontWeight="Bold"  Width="80" Click="dataLoad_Click"/>
+                        <Button x:Name="dataRemove" Content="Veri Sil" FontWeight="Bold"  Width="80" Click="dataRemove_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
         </StackPanel>
-        <Button x:Name="exportButton" Grid.Column="1" Content="Dışarı Aktar" Margin="0,0,9,0" Click="exportClick" Height="25" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="81"
-                Background="LightGray" FontWeight="Bold"/>
+        <Button x:Name="exportButton" Grid.Column="2" Content="Dışarı Aktar" Margin="0,0,11,0" Click="exportClick"
+                Background="LightGray" FontWeight="Bold" Height="25" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="108"/>
 
 
 

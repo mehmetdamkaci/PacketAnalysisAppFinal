@@ -3,6 +3,9 @@ using LiveCharts.Wpf;
 using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
+using OfficeOpenXml.Style;
+using Ookii.Dialogs.Wpf;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,6 +18,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Remoting.Channels;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Xml;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -27,15 +31,17 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shell;
 using System.Windows.Threading;
+using System.Xml.Serialization;
 using WpfAnimatedGif;
 
 namespace PacketAnalysisApp
 {
     public partial class MainWindow : Window
     {
-        SettingsWindow settingsWindow = new SettingsWindow();
+        public bool dataLoading = false;
 
         Popup popUp = new Popup();
+        public string folderPath;
         string nowDate = null;
         bool appClosing = false;
         bool writeFinished = false;
@@ -44,6 +50,7 @@ namespace PacketAnalysisApp
         int saveLength;
         int tempLength;
         DataKeeper dataKeeper = new DataKeeper();
+        SettingsWindow settingsWindow = new SettingsWindow();
         Export export = new Export();
 
         string paket = "";
@@ -134,15 +141,17 @@ namespace PacketAnalysisApp
             ImageBehavior.SetAnimatedSource(loading, image);
 
             AppClosed += MainAppClosed;
-            dataKeeper.ExportFinished += ExportFinished;            
+            dataKeeper.ExportFinished += exportAllChart;            
             exportButton.IsEnabled = false;
             startConnect = true;
             disconnectButton.IsEnabled = false;
+            dataRemove.IsEnabled = false;
             subscriber = new Thread(new ThreadStart(receiveData));
             // -------------------- EVENTLER --------------------
             settingsWindow.Closed += enumMatchClosed;
             settingsWindow.SaveClickedEvent += enumKaydetClick;
             settingsWindow.DisconnectEvent += DisconnectButtonClicked;
+            settingsWindow.nowDate = dataKeeper.nowDate;
 
             // -------------------- ENUM YAPISININ OLULŞTURULMASI --------------------
             //enumStruct = enumMatchWindow.enumStructMain;
@@ -171,6 +180,7 @@ namespace PacketAnalysisApp
             expectedFreq = settingsWindow.expectedFreq;
             expectedDim = settingsWindow.expectedDim;
             enumStruct = settingsWindow.enumStruct;
+            settingsWindow.nowDate = dataKeeper.nowDate;
             settingsWindow.UpdateClickedEvent += ExpectedFreqClicked;
             settingsWindow.Show();
         }
@@ -282,10 +292,40 @@ namespace PacketAnalysisApp
             SectionsCollection collection = (SectionsCollection)sender;
             if (e.Action == NotifyCollectionChangedAction.Add)
             {
-
                 collection[collection.Count - 2].StrokeThickness = 0;
             }
             
+        }
+
+        public delegate void ExportChartHandler();
+        public event ExportChartHandler ExportChartEvent;
+        
+        public void exportAllChart()
+        {
+            logLabel.Visibility = Visibility.Collapsed;
+            if (appClosing)
+            {
+                ExportChartEvent += ExportFinished;
+                string folderPathFreq = Path.Combine(folderPath, "FREKANS");
+                string folderPathDim = Path.Combine(folderPath, "BOYUT");
+                if (!Directory.Exists(folderPathFreq)) Directory.CreateDirectory(folderPathFreq);
+                if (!Directory.Exists(folderPathDim)) Directory.CreateDirectory(folderPathDim);
+
+
+                dataGrid.Dispatcher.Invoke(new Action(() =>
+                {
+                    for (int i = 0; i < totalReceivedPacket.Count; i++)
+                    {
+                        string fileName = totalReceivedPacket.ElementAt(i).Key[0] + "_" + totalReceivedPacket.ElementAt(i).Key[1];
+                        string savePath = Path.Combine(folderPath, fileName);
+                        dataKeeper.ChartExport("BOYUT", fileName, Path.Combine(folderPathDim, fileName + ".xlsx"));
+                        dataKeeper.ChartExport("FREKANS", fileName, Path.Combine(folderPathFreq, fileName + ".xlsx"));
+                    }
+                }));
+                ExportChartEvent?.Invoke();
+
+              
+            }
         }
 
         //Grafikleri Dışarı aktarma fonksiyonu
@@ -319,9 +359,6 @@ namespace PacketAnalysisApp
 
                     if (savePath.Substring(savePath.LastIndexOf('.') + 1, 4) != "xlsx") savePath += ".xlsx";
 
-                    //dataKeeper.writeData("BOYUT", fileName, dimLineValuesList[selectedRow.Key].ToList<int>(), dimChartXLabels[selectedRow.Key].ToList<string>());
-                    //dimLineValuesList[selectedRow.Key].Clear();
-                    //dimChartXLabels[selectedRow.Key].Clear();
                     writeTempData();
                     dataKeeper.readData("BOYUT", fileName, savePath, dimChartExportPanel[selectedRow.Key]);
                 }
@@ -386,47 +423,69 @@ namespace PacketAnalysisApp
             {
                 bool result = false;
 
-                if (!appClosing)
-                {
-                    Microsoft.Win32.SaveFileDialog openFileDlg = new Microsoft.Win32.SaveFileDialog();
-                    openFileDlg.FileName = settingsWindow.packetName + ".xlsx";
+                //if (!appClosing)
+                //{
+                //    Microsoft.Win32.SaveFileDialog openFileDlg = new Microsoft.Win32.SaveFileDialog();
+                //    openFileDlg.FileName = settingsWindow.packetName + ".xlsx";
 
-                    result = (bool)openFileDlg.ShowDialog();
-                    savePath = openFileDlg.FileName;
-                }
-                else
-                {
-                    result = true;
-                    savePath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis");
-                    savePath = savePath + "\\DATA\\Export\\";
-                    if(!Directory.Exists(savePath))
-                    {
-                        Directory.CreateDirectory(savePath);
-                    }
-                    savePath = savePath + settingsWindow.packetName + "_" + dataKeeper.nowDate;
-                }
+                //    result = (bool)openFileDlg.ShowDialog();
+                //    savePath = openFileDlg.FileName;
+                //}
+                //else
+                //{
+                //    result = true;
+                //    savePath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis");
+                //    savePath = savePath + "\\DATA\\Export\\";
+                //    if(!Directory.Exists(savePath))
+                //    {
+                //        Directory.CreateDirectory(savePath);
+                //    }
+                //    savePath = savePath + settingsWindow.packetName + "_" + dataKeeper.nowDate;
+                //}
+
+                Microsoft.Win32.SaveFileDialog openFileDlg = new Microsoft.Win32.SaveFileDialog();
+                openFileDlg.FileName = settingsWindow.packetName;
+                result = (bool)openFileDlg.ShowDialog();
+                savePath = openFileDlg.FileName;
 
                 if (result == true)
                 {
+                    if (appClosing)
+                    {
+                        
+                        string name = settingsWindow.packetName + ".xlsx";                        
+                        folderPath = Path.Combine(openFileDlg.FileName, dataKeeper.nowDate);
+                        if(!Directory.Exists(folderPath))
+                        {
+                            Directory.CreateDirectory(folderPath);
+                        }
+                        savePath = Path.Combine(folderPath, name);                        
+                    }
+                    else
+                    {
+                        savePath = openFileDlg.FileName + ".xlsx";
+                        if (savePath.Substring(savePath.LastIndexOf('.') + 1, 4) != "xlsx") savePath += ".xlsx";
+                    }
+                    ///Directory.CreateDirectory(Path.Combine(openFileDlg.FileName.Substring(), settingsWindow.packetName));
+                    
                     writeFinished = false;
                     exportButton.Visibility = Visibility.Collapsed;
                     loading.Visibility = Visibility.Visible;
 
                     logLabel.Content = "Veriler Dışarıya Aktarılıyor...";
-
                     
                     Task.Run(() =>
                     {
                         dataGrid.Dispatcher.Invoke(() =>
                         {
-                            if (savePath.Substring(savePath.LastIndexOf('.') + 1, 4) != "xlsx") savePath += ".xlsx";
+                            
                             Task task = new Task(writeTempData);
                             task.RunSynchronously();
                             //exportAll();
                             dataKeeper.mainExport(totalReceivedPacket, savePath, loading, exportButton, exportLabel);
                         });
 
-                    });
+                    });                    
                 }
                 else return;
             }));
@@ -731,9 +790,15 @@ namespace PacketAnalysisApp
             dataKeeper.packetName = settingsWindow.packetName;
             dataKeeper.fileNames = totalReceivedPacket.Keys.ToList();
 
-            dataKeeper.CreateDir();
-            nowDate = dataKeeper.nowDate;
+            if (!dataLoading) 
+            {
+                dataKeeper.CreateDir();
+                nowDate = dataKeeper.nowDate;
+                settingsWindow.nowDate = dataKeeper.nowDate;
+            }
 
+            settingsWindow.CopyConfigFile();
+            settingsWindow.InitExpectedValue();
         }
 
         //Bir saniyede bir tabloyu ve frekans değerlerini güncelleyen fonksiyon
@@ -822,7 +887,7 @@ namespace PacketAnalysisApp
                             chart.AxisY[0].MaxValue = value.Max() + 1;
 
                         chart.AxisX[0].MinValue = 0;
-                        chart.AxisX[0].MaxValue = saveLength - 1;
+                        chart.AxisX[0].MaxValue = label.Count - 1;
                         break;
                     case "REAL":
                         chart.AxisY[0].MinValue = -1;
@@ -865,6 +930,7 @@ namespace PacketAnalysisApp
             if (chart != null)
             {
                 dimChartStatuses[chart.Name] = "DEFAULT";
+                if (dataLoading) chart.Pan = PanningOptions.X;
             }
         }
         private void ChartPanEvent(object sender, MouseButtonEventArgs e)
@@ -873,6 +939,7 @@ namespace PacketAnalysisApp
             if (chart != null)
             {
                 chartStatuses[chart.Name] = "DEFAULT";
+                if (dataLoading) chart.Pan = PanningOptions.X;
             }
         }
 
@@ -883,6 +950,7 @@ namespace PacketAnalysisApp
             if (chart != null)
             {
                 chartStatuses[chart.Name] = "DEFAULT";
+                if(dataLoading) chart.Zoom = ZoomingOptions.X;
             }
 
         }
@@ -892,11 +960,13 @@ namespace PacketAnalysisApp
             if (chart != null)
             {
                 dimChartStatuses[chart.Name] = "DEFAULT";
-            }
+                if (dataLoading) chart.Zoom = ZoomingOptions.X;
 
+            }
         }
 
         //tablonun paketlerine göre renklerini ayarlayan fonksiyon
+
         public void setColor()
         {
             Task.Run(() =>
@@ -906,7 +976,6 @@ namespace PacketAnalysisApp
                 {
                     try
                     {
-
                         foreach (Series series in pieChart.Series)
                         {
                             if (series is PieSeries pieSeries)
@@ -961,7 +1030,6 @@ namespace PacketAnalysisApp
                         }));
                         settingsWindow.colors = rowColor;
                         settingsWindow.setColor();
-
                     }
                     catch
                     {
@@ -1060,6 +1128,7 @@ namespace PacketAnalysisApp
                 {
                     KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)selecteItem;
                     dimLabelStacks[selectedRow.Key] = sender as StackPanel;
+                    setExpectedLabel(selectedRow.Key, dimLineValuesList, dimLabelStacks, expectedDim, "Boyut");
                 }
             }));
         }
@@ -1070,8 +1139,12 @@ namespace PacketAnalysisApp
                 var selecteItem = dataGrid.SelectedItem;
                 if (selecteItem != null)
                 {
+                    
                     KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)selecteItem;
                     freqLabelStacks[selectedRow.Key] = sender as StackPanel;
+
+                    setExpectedLabel(selectedRow.Key, lineValuesList, freqLabelStacks, expectedFreq, "Frekans");
+                    
                 }
             }));
         }
@@ -1152,10 +1225,26 @@ namespace PacketAnalysisApp
         //Enum eşleştirilmesi tamamlandığında oluşan event
         private void enumKaydetClick(object sender, RoutedEventArgs e)
         {
-            enumStruct = settingsWindow.enumStruct;
+            if (((Button)sender).Name != "dataLoad") 
+            {
+                enumStruct = settingsWindow.enumStruct;
+                expectedFreq = settingsWindow.expectedFreq;
+                expectedDim = settingsWindow.expectedDim;
+                createDataStruct();
+                updateGrid();
+            } 
+            else 
+            {
+                enumStruct = settingsWindow.enumStruct;
+                expectedFreq = settingsWindow.expectedFreq;
+                expectedDim = settingsWindow.expectedDim;
+
+                createDataStruct();
+                updateGrid();
+                FillEnumStruct();
+            }
             if (timer != null) timer.Stop();
-            createDataStruct();
-            updateGrid();
+
         }
 
         //Program başladığında ve enum dosyası değiştiğinde grafiği güncelleyen event
@@ -1213,7 +1302,7 @@ namespace PacketAnalysisApp
             timer = new DispatcherTimer();
             timer.Interval = TimeSpan.FromMilliseconds(1000);
             timer.Tick += UpdateFrekans;
-            timer.Start();
+            if(!dataLoading) timer.Start();
         }
 
         //Hücreleri bulmayı sağlayan fonksiyon
@@ -1257,6 +1346,7 @@ namespace PacketAnalysisApp
         private void enumMatchClosed(object sender, EventArgs e)
         {
             settingsWindow = new SettingsWindow();
+            settingsWindow.nowDate = dataKeeper.nowDate;
             expectedFreq = settingsWindow.expectedFreq;
             expectedDim = settingsWindow.expectedDim;
             settingsWindow.Closed += enumMatchClosed;
@@ -1549,8 +1639,9 @@ namespace PacketAnalysisApp
         public void setExpectedLabel(string[] key, Dictionary<string[], ChartValues<int>> values, Dictionary<string[], StackPanel> stacks,
                                  Dictionary<string[], int> expectedValue, string type)
         {
-            if (stacks[key].Children.Count > 0 & !rowColorStart)
+            if (stacks[key].Children.Count > 0 & (!rowColorStart || dataLoading))
             {
+                
                 double packetTotal = values[key].Count;
                 int eq = values[key].Count(chartValue => chartValue == expectedValue[key]);
                 int down = values[key].Count(chartValue => chartValue < expectedValue[key]);
@@ -1733,7 +1824,8 @@ namespace PacketAnalysisApp
             object sender = new object();
             EventArgs e = new EventArgs();
 
-            logLabel.Content = string.Empty;
+            if (dataLoading) logLabel.Content = "Kayıtlı Veriler Görüntüleniyor";
+            else logLabel.Content = string.Empty;
 
             if (appClosing)
             {
@@ -1746,7 +1838,7 @@ namespace PacketAnalysisApp
                 }
                 else if (!popUp.resultDelFile)
                 {
-                    exportAll();
+                    //exportAll();
                     AppClosed?.Invoke(sender, e);
                 }
                 else { };
@@ -1779,6 +1871,7 @@ namespace PacketAnalysisApp
 
         public void resultSet(object sender, RoutedEventArgs e)
         {
+
             if (popUp.resultExport)
             {
                 this.Visibility = Visibility.Collapsed;
@@ -1791,6 +1884,8 @@ namespace PacketAnalysisApp
                 //exportAll();
                 ExportFinished();
             }
+
+
         }
 
         private void MainAppClosing(object sender, CancelEventArgs e)
@@ -1839,6 +1934,8 @@ namespace PacketAnalysisApp
                 {
                     KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)selecteItem;
                     dimChartStatuses[selectedRow.Key.ElementAt(0) + "_" + selectedRow.Key.ElementAt(1)] = "ZOOM-";
+                    if(dataLoading) setChartStatues(dimChartList[selectedRow.Key], dimLineValuesList[selectedRow.Key],
+                                                    dimChartXLabels[selectedRow.Key], dimChartStatuses[selectedRow.Key[0] + "_" + selectedRow.Key[1]]);
                 }
             }));
         }
@@ -1866,6 +1963,8 @@ namespace PacketAnalysisApp
             {
                 KeyValuePair<string[], int[]> selectedRow = (KeyValuePair<string[], int[]>)row.Item;
                 chartStatuses[selectedRow.Key.ElementAt(0) + "_" + selectedRow.Key.ElementAt(1)] = "ZOOM-";
+                if(dataLoading) setChartStatues(chartList[selectedRow.Key], lineValuesList[selectedRow.Key],
+                                        chartXLabels[selectedRow.Key], chartStatuses[selectedRow.Key[0] + "_" + selectedRow.Key[1]]);
             }
             else MessageBox.Show("row null");
 
@@ -1950,6 +2049,152 @@ namespace PacketAnalysisApp
             disconnectButton.IsEnabled = false;
             connectButton.IsEnabled = true;
 
+        }
+
+        private async void dataLoad_Click(object sender, RoutedEventArgs e)
+        {
+            
+            VistaFolderBrowserDialog dlg = new VistaFolderBrowserDialog();
+            dlg.SelectedPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA");
+            dlg.ShowNewFolderButton = true;
+
+            if (dlg.ShowDialog() == true)
+            {
+                loading.Visibility = Visibility.Visible;
+                exportButton.Visibility = Visibility.Collapsed;
+                dataLoad.IsEnabled = false;
+                dataRemove.IsEnabled = true;
+                DisconnectButtonClicked(sender, e);
+                await Task.Delay(1000);
+                if(timer != null) timer.Stop();
+                dataLoading = true;
+                string dataLoadPath = dlg.SelectedPath;
+                
+                DirectoryInfo directoryInfo = new DirectoryInfo(dataLoadPath);
+                FileInfo[] files = directoryInfo.GetFiles("*.json");
+                
+
+                settingsWindow = new SettingsWindow(dataLoadPath + "\\" + files[0].Name);
+                //settingsWindow.jsonPath = "C:\\Users\\PC_4232\\AppData\\Roaming\\PacketAnalysis\\DATA\\YZB_PAKET\\13-12-23--13-45\\PackageConfig.json";
+                enumStruct = settingsWindow.enumStruct;
+
+                connectButton.IsEnabled = false;
+                enumKaydetClick(sender, e);
+            }
+        }
+
+        public delegate void PiechartColorHandler();
+        public event PiechartColorHandler ColorChanged;
+        public void FillChart(string chartType)
+        {
+            ColorChanged += setColorLoad;
+            for (int i = 0; i < totalReceivedPacket.Count; i++)
+            {
+                string[] paket_proje = totalReceivedPacket.ElementAt(i).Key;
+
+                int row = 2;
+
+                string fileName = paket_proje[0] + "_" + paket_proje[1];
+                string date = settingsWindow.jsonPath.Replace(settingsWindow.jsonPath.Substring(settingsWindow.jsonPath.LastIndexOf("\\")), "");
+                date = date.Substring(date.LastIndexOf("\\") + 1);
+                dataKeeper.savedDataMode(date);
+                dateLabel.Content = "Tarih: " + date;
+                string typePath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + settingsWindow.packetName + "\\" + date + "\\" + chartType + "\\");
+
+                using (StreamReader sr = new StreamReader(Path.Combine(typePath, fileName + ".txt")))
+                {
+                    row = 1;
+                    while (!sr.EndOfStream)
+                    {
+                        //progressBar.Value += 1;
+                        string[] data = sr.ReadLine().Split(',');
+                        if (row > 1)
+                        {
+                            object value = null;
+                            try
+                            {
+                                value = int.Parse(data[1]);
+                            }
+                            catch
+                            {
+                                value = data[1];
+                            }
+
+                            if (chartType == "FREKANS")
+                            {
+                                chartXLabels[paket_proje].Add(data[0]);
+                                lineValuesList[paket_proje].Add((int)value);
+                                lineSeriesList[paket_proje].Values = lineValuesList[paket_proje];
+                            }
+                            else
+                            {
+                                dimChartXLabels[paket_proje].Add(data[0]);
+                                dimLineValuesList[paket_proje].Add((int)value);
+                                dimLineSeriesList[paket_proje].Values = dimLineValuesList[paket_proje];
+                            }
+                        }
+
+                        row++;
+                    }                   
+
+                    pieChartValues[paket_proje[0]][0] += dimLineValuesList[paket_proje].Count;
+
+                    var item = dataSource.FirstOrDefault(j => j.Key == paket_proje);
+                    if (item.Key == null)
+                    {
+                    }
+                    else
+                    {
+                        int index = dataSource.IndexOf(item);
+                        dataSource[index] = new KeyValuePair<string[], int[]>(item.Key, new int[] { item.Value[0], dimLineValuesList[paket_proje].Count, item.Value[2], dimLineValuesList[paket_proje].Sum() });
+                        totalReceivedPacket[paket_proje] = dataSource[index].Value;
+                    }                                        
+                }
+            }
+            int idx = 0;
+            string name = totalReceivedPacket.ElementAt(0).Key[0];
+            foreach (var data in totalReceivedPacket)
+            {
+                if(name != data.Key[0])
+                {
+                    idx = 0;
+                }
+
+                barColumnSeries[data.Key[0]].Values[idx] = dimLineValuesList[data.Key].Count;
+                idx++;
+
+                name = data.Key[0];
+            }
+            ColorChanged?.Invoke();
+        }
+
+        public void FillEnumStruct() 
+        {
+            
+            FillChart("FREKANS");
+            FillChart("BOYUT");
+
+            logLabel.Visibility = Visibility.Visible;
+            logLabel.Content = "Kayıtlı Veriler Görüntüleniyor";
+        }
+
+        private async void setColorLoad()        
+        {
+            await Task.Delay(1000);
+            setColor();
+            exportButton.Visibility = Visibility.Visible;
+            loading.Visibility = Visibility.Collapsed;
+        }
+
+        private void dataRemove_Click(object sender, RoutedEventArgs e)
+        {
+            dataLoading = false;
+            dataLoad.IsEnabled = true; dataRemove.IsEnabled = false;
+            logLabel.Content = string.Empty;
+            dateLabel.Content = "Tarih: ";
+            settingsWindow = new SettingsWindow();            
+            enumKaydetClick(sender, e);
+            connectButton.IsEnabled = true;
         }
     }
 }

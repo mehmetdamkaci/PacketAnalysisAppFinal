@@ -176,3 +176,6 @@ C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\obj\Debug\Se
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\obj\Debug\SettingsWindow.baml
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\obj\Debug\Popup.g.cs
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\obj\Debug\Popup.baml
+C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\Ookii.Dialogs.Wpf.dll
+C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\Ookii.Dialogs.Wpf.pdb
+C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\Ookii.Dialogs.Wpf.xml

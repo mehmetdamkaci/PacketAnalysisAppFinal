@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PacketAnalysisApp"
         mc:Ignorable="d"
-        Title="" Height="180" Width="300" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow">
+        Title="Kapatılıyor" Height="180" Width="300" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow">
     <Grid>
 
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Vertical">
