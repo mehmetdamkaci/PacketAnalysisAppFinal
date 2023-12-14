@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:PacketAnalysisApp"        
         xmlns:gif="http://wpfanimatedgif.codeplex.com"
         xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf" 
-        WindowStartupLocation="CenterScreen" Width="1441" Height="720"
+        WindowStartupLocation="CenterScreen" Width="1440" Height="840"
         AllowsTransparency="False" Background="#333333" Closed="MainAppClosed" Closing="MainAppClosing">
 
     <Window.Resources>
@@ -256,7 +256,7 @@
         </ScrollViewer>
 
         <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="0,10,11,-10" HorizontalAlignment="Center">
-            <Border x:Name="borderSocketPanel" CornerRadius="20" BorderBrush="Black" BorderThickness="1" Background="Gray"  VerticalAlignment="Bottom" Margin="0,0,0,32" 
+            <Border x:Name="borderSocketPanel" CornerRadius="20" BorderBrush="Black" BorderThickness="2" Background="Gray" VerticalAlignment="Bottom" Margin="0,0,0,32" 
                         HorizontalAlignment="Left"  Grid.Column="2">
                 <StackPanel x:Name="socketPanel" Orientation="Vertical" HorizontalAlignment="Center" Background="Transparent">
                     <StackPanel Margin="0,20,0,0" Orientation="Horizontal">
@@ -273,7 +273,7 @@
                     </StackPanel>
                 </StackPanel>
             </Border>
-            <Border Margin="10,0,0,33" VerticalAlignment="Bottom" CornerRadius="20" Background="Gray" Width="auto" BorderBrush="Black" BorderThickness="1">
+            <Border Margin="10,0,0,33" VerticalAlignment="Bottom" CornerRadius="20" Background="Gray" Width="auto" BorderBrush="Black" BorderThickness="2">
                 <StackPanel Margin="10,50,10,20" Orientation="Vertical" VerticalAlignment="Top">
                     <Label x:Name="dateLabel" Content="Tarih : " FontWeight="Bold" Foreground="White"/>
                     <StackPanel Orientation="Horizontal" RenderTransformOrigin="0.533,2.328" Margin="0,25,0,0">

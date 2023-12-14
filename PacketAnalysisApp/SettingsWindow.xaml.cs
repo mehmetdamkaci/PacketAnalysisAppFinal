@@ -209,11 +209,22 @@ namespace PacketAnalysisApp
             configData.bufferLength = lenBuffer;
 
             File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
-            string configPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + packetName + "\\" + nowDate + "\\PackageConfig.json");
+            string configPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + packetName + "\\" + nowDate + "\\PacketConfig.json");
             File.Copy(jsonPath, configPath, true);
 
             ChartUpdating?.Invoke(sender, e);
 
+        }
+
+        public void GridClear(Grid grid) 
+        {
+            if(grid != null)
+            {
+                if(grid.Children.Count > 1)
+                {
+                    for(int i = 1; i < grid.Children.Count; i++) grid.Children.RemoveAt(i);
+                }
+            }
         }
 
         public delegate void DisconnectEventHandler(object sender, RoutedEventArgs e);
@@ -227,6 +238,7 @@ namespace PacketAnalysisApp
 
             if (result == true & disconnect)
             {
+                GridClear(matchAndExpectedGrid);
                 enumPath = openFileDlg.FileName;
                 enumText = File.ReadAllText(enumPath);
                 ProcessEnumCode(enumText, true);
@@ -236,6 +248,7 @@ namespace PacketAnalysisApp
             {
                 if (result == true) 
                 {
+                    GridClear(matchAndExpectedGrid);
                     DisconnectEvent?.Invoke(sender, e);
                     enumPath = openFileDlg.FileName;
                     enumText = File.ReadAllText(enumPath);
@@ -633,9 +646,9 @@ namespace PacketAnalysisApp
             configData.Path = path;
             configData.Name = packetName;
             File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
-            string configPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + packetName + "\\" + nowDate + "\\PacketConfig.json");
-            if(File.Exists(configPath)) File.Copy(jsonPath, configPath, true);
-            else File.Copy(jsonPath, configPath);
+            //string configPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + packetName + "\\" + nowDate + "\\PacketConfig.json");
+            //if(File.Exists(configPath)) File.Copy(jsonPath, configPath, true);
+            //else File.Copy(jsonPath, configPath);
 
             NewExpectedValue(expectedFreq, "FREQ");
             NewExpectedValue(expectedDim, "DIM");
@@ -748,15 +761,15 @@ namespace PacketAnalysisApp
             {
                 configData.Freq = tempExpectedValues;
                 File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
-                string configPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + packetName + "\\" + nowDate + "\\PacketConfig.json");
-                File.Copy(jsonPath, configPath, true);
+                //string configPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + packetName + "\\" + nowDate + "\\PacketConfig.json");
+                //File.Copy(jsonPath, configPath, true);
             }
             else if(key == "DIM")
             {
                 configData.Dim = tempExpectedValues;
                 File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
-                string configPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + packetName + "\\" + nowDate + "\\PacketConfig.json");
-                File.Copy(jsonPath, configPath, true);
+                //string configPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + packetName + "\\" + nowDate + "\\PacketConfig.json");
+                //File.Copy(jsonPath, configPath, true);
             }
 
         }
@@ -997,7 +1010,7 @@ namespace PacketAnalysisApp
                     _packetProje = packetProje;
 
                     File.WriteAllText(jsonPath, JsonConvert.SerializeObject(configData, Formatting.Indented));
-                    string configPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + packetName + "\\" + nowDate + "\\PackageConfig.json");
+                    string configPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + packetName + "\\" + nowDate + "\\PacketConfig.json");
                     File.Copy(jsonPath, configPath, true);
 
                     UpdateClickedEvent?.Invoke(sender, e);

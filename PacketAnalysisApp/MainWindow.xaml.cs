@@ -795,9 +795,10 @@ namespace PacketAnalysisApp
                 dataKeeper.CreateDir();
                 nowDate = dataKeeper.nowDate;
                 settingsWindow.nowDate = dataKeeper.nowDate;
+                settingsWindow.CopyConfigFile();
             }
 
-            settingsWindow.CopyConfigFile();
+            
             settingsWindow.InitExpectedValue();
         }
 
@@ -2060,19 +2061,25 @@ namespace PacketAnalysisApp
 
             if (dlg.ShowDialog() == true)
             {
+                string dataLoadPath = dlg.SelectedPath;
+                
+                DirectoryInfo directoryInfo = new DirectoryInfo(dataLoadPath);
+                FileInfo[] files = directoryInfo.GetFiles("*.json");
+                
+                if(files.Length == 0)
+                {
+                    MessageBox.Show("Seçilen Klasörde Konfig Dosyası Bulunmamaktadır.");
+                    return; 
+                }
+
                 loading.Visibility = Visibility.Visible;
                 exportButton.Visibility = Visibility.Collapsed;
                 dataLoad.IsEnabled = false;
                 dataRemove.IsEnabled = true;
                 DisconnectButtonClicked(sender, e);
                 await Task.Delay(1000);
-                if(timer != null) timer.Stop();
+                if (timer != null) timer.Stop();
                 dataLoading = true;
-                string dataLoadPath = dlg.SelectedPath;
-                
-                DirectoryInfo directoryInfo = new DirectoryInfo(dataLoadPath);
-                FileInfo[] files = directoryInfo.GetFiles("*.json");
-                
 
                 settingsWindow = new SettingsWindow(dataLoadPath + "\\" + files[0].Name);
                 //settingsWindow.jsonPath = "C:\\Users\\PC_4232\\AppData\\Roaming\\PacketAnalysis\\DATA\\YZB_PAKET\\13-12-23--13-45\\PackageConfig.json";
