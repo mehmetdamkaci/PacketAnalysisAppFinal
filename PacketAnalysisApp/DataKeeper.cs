@@ -215,7 +215,8 @@ namespace PacketAnalysisApp
                     setCellStyle(worksheetTable, pieRow, 20, null, colors[item.Key[0]], true);
 
                     worksheetTable.Cells[pieRow, 20].Formula = "Sum(" + worksheetTable.Cells[barChartPos, 3].Address +
-                                                            ":" + worksheetTable.Cells[rowTable + count - 1, 3].Address + ")";                   
+                                                            ":" + worksheetTable.Cells[rowTable + count - 1, 3].Address + ")";
+
 
                     barChartPos = rowTable + count;
                 }
@@ -354,6 +355,11 @@ namespace PacketAnalysisApp
                     chartSheet.Row(countChartRow).Style.Fill.BackgroundColor.SetColor(ColorConverter(colors[colors.ElementAt(i).Key]));
                 }
             }
+
+        }
+
+        public void dataFlow()
+        {
 
         }
 
