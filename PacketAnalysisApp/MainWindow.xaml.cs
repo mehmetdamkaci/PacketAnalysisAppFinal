@@ -2535,6 +2535,24 @@ namespace PacketAnalysisApp
                     totalReceivedPacket[paket_proje][1] = dimChartXLabels[paket_proje].Count;
                     totalReceivedPacket[paket_proje][3] = dimLineValuesList[paket_proje].Sum();
                     dimLineSeriesList[paket_proje].Values = dimLineValuesList[paket_proje];
+                }
+
+                for (int i = 0; i < totalReceivedPacket.Count; i++)
+                {
+                    string[] paket_proje = totalReceivedPacket.ElementAt(i).Key;
+
+                    var item = dataSource.FirstOrDefault(x => x.Key.SequenceEqual(paket_proje));
+                    if (item.Key == null)
+                    {
+                        dataSource.Add(new KeyValuePair<string[], int[]>(paket_proje, totalReceivedPacket[paket_proje]));
+                    }
+                    else
+                    {
+                        int index = dataSource.IndexOf(item);
+                        dataSource[index].Value[1] = totalReceivedPacket[paket_proje][1];
+                        dataSource[index].Value[3] = totalReceivedPacket[paket_proje][3];
+                        dataSource[index] = new KeyValuePair<string[], int[]>(item.Key, new int[] { item.Value[0], item.Value[1], item.Value[2], item.Value[3] });
+                    }
 
                     int total = 0;
                     int idx = 0;
@@ -2573,8 +2591,8 @@ namespace PacketAnalysisApp
 
                             if (index != -1 && index < labelList.Count - 1)
                             {
-                                labelList.RemoveRange(index + 1, labelList.Count - (index + 1));
-                                for(int i = index + 1; i< length; i++)
+                                labelList.RemoveRange(index , labelList.Count - (index));
+                                for(int i = index ; i< length; i++)
                                 {
                                     values[key].RemoveAt(values[key].Count - 1);
                                 }
