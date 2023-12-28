@@ -217,17 +217,18 @@
             <Label x:Name="exportLabel" Content="Tablo Dışarı Aktarıldı." Margin="0,0,24,3" HorizontalAlignment="Right" Width="130" Height="26"  
                 VerticalAlignment="Bottom" FontWeight="Bold" Foreground="White" Visibility="Collapsed" Grid.ColumnSpan="2"/>
             <Label x:Name="logLabel" Content="" HorizontalContentAlignment="Center" Foreground="WhiteSmoke" HorizontalAlignment="Right" Margin="0,0,353,0" Height="26" VerticalAlignment="Bottom" />
-            <ProgressBar x:Name="playingBar" HorizontalContentAlignment="Center" FlowDirection="RightToLeft" Margin="30,0,-30,10" VerticalAlignment="Bottom" Height="10" RenderTransformOrigin="0.5,0.5" Grid.ColumnSpan="2" Visibility="Collapsed" >
-                <ProgressBar.RenderTransform>
+            <Slider x:Name="playingBar" HorizontalContentAlignment="Center" FlowDirection="RightToLeft" Margin="30,0,-30,10" VerticalAlignment="Bottom" Height="10" 
+                    RenderTransformOrigin="0.5,0.5" Grid.ColumnSpan="2" Visibility="Collapsed" ValueChanged="ChangedValueSlider" Thumb.DragCompleted="SliderValueChanged" Thumb.DragStarted="SliderDragStart">
+                <Slider.RenderTransform>
                     <TransformGroup>
                         <ScaleTransform ScaleX="-1" ScaleY="-1"/>
                         <SkewTransform/>
                         <RotateTransform/>
                         <TranslateTransform/>
                     </TransformGroup>
-                </ProgressBar.RenderTransform>
-            </ProgressBar>
-
+                </Slider.RenderTransform>
+            </Slider>
+            <TextBlock x:Name="sliderText" Text="" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Bottom"/>
             <!--<TextBox x:Name="tbox" HorizontalAlignment="Left" Margin="324,254,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="315" Height="249"/>-->
         </Grid>
 
