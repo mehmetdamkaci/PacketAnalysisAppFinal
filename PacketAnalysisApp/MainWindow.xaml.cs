@@ -37,6 +37,7 @@ using OfficeOpenXml;
 using static NetMQ.NetMQSelector;
 using System.Globalization;
 using System.Timers;
+using System.Windows.Markup;
 
 namespace PacketAnalysisApp
 {
@@ -191,38 +192,6 @@ namespace PacketAnalysisApp
             settingsWindow.nowDate = dataKeeper.nowDate;
             settingsWindow.UpdateClickedEvent += ExpectedFreqClicked;
             settingsWindow.Show();
-        }
-
-        private void ExpectedDimClicked(object sender, RoutedEventArgs e)
-        {
-            dataGrid.Dispatcher.Invoke(new Action(() =>
-            {
-                for (int i = 0; i < expectedDim.Count; i++)
-                {
-                    dimChartList[expectedDim.ElementAt(i).Key].Dispatcher.Invoke( async () =>
-                    {                        
-                        if (dimChartList[expectedDim.ElementAt(i).Key].AxisY.Count > 0)
-                        {
-                            if (dimChartList[expectedDim.ElementAt(i).Key].AxisY[0].Sections.Count > 0)
-                            {
-                                dimChartList[expectedDim.ElementAt(i).Key].AxisY[0].Sections.Clear();
-                                dimChartList[expectedDim.ElementAt(i).Key].AxisY[0].Sections = new SectionsCollection
-                            {
-                                new AxisSection
-                                {
-                                    Value = expectedDim[expectedDim.ElementAt(i).Key],
-                                    SectionWidth = 0,
-                                    Stroke = Brushes.Red,
-                                    SectionOffset = 0,
-                                    StrokeThickness = 2.5,
-                                }
-                            };
-                                expectedDimBoxs[expectedDim.ElementAt(i).Key].Text = expectedDim[expectedDim.ElementAt(i).Key].ToString();
-                            }
-                        }
-                    });
-                }
-            }));
         }
 
         private async void ExpectedFreqClicked(object sender, RoutedEventArgs e)
@@ -1456,7 +1425,7 @@ namespace PacketAnalysisApp
                                 settingsWindow.configData.Dim[name[0] + "." + name[1]] = expectedDim[name];
                                 settingsWindow.updateExpetedBox(name);
                                 File.WriteAllText("PacketConfig.json", JsonConvert.SerializeObject(settingsWindow.configData, Formatting.Indented));
-                                ExpectedDimClicked(sender, e);
+                                ExpectedFreqClicked(sender, e);
                                 if(!settingsWindowVis) { settingsWindow.showUpdateListView();  }                                
                                 return;
                             }
@@ -2102,23 +2071,6 @@ namespace PacketAnalysisApp
                 else { };
             }
 
-            //if (appClosing)
-            //{
-            //    MessageBoxResult resultSave = MessageBox.Show("Kaydedilen Veriler Silinsin Mi?", "", MessageBoxButton.YesNoCancel);
-            //    if (resultSave == MessageBoxResult.Yes)
-            //    {
-            //        writeFinished = false;                    
-            //        string folderPath = Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"), "PacketAnalysis\\DATA\\" + paketName + "\\" + nowDate);
-            //        Directory.Delete(folderPath, true);
-            //        AppClosed?.Invoke(sender,e);
-            //    }
-            //    else if (resultSave == MessageBoxResult.No)
-            //    {
-            //        exportAll();
-            //        AppClosed?.Invoke(sender, e);
-            //    }
-            //    else { };
-            //}
         }
         private void MainAppClosed(object sender = null, EventArgs e=null)
         {
@@ -2129,7 +2081,6 @@ namespace PacketAnalysisApp
 
         public void resultSet(object sender, RoutedEventArgs e)
         {
-
             if (popUp.resultExport)
             {
                 this.Visibility = Visibility.Collapsed;
@@ -2142,8 +2093,6 @@ namespace PacketAnalysisApp
                 //exportAll();
                 ExportFinished();
             }
-
-
         }
 
         private void MainAppClosing(object sender, CancelEventArgs e)
@@ -2495,7 +2444,18 @@ namespace PacketAnalysisApp
 
                 name = data.Key[0];
             }
-            ColorChanged?.Invoke();                                   
+            ColorChanged?.Invoke();
+
+            BitmapImage playSource = new BitmapImage();
+            playSource.BeginInit();
+            playSource.UriSource = new Uri((Path.Combine(Environment.CurrentDirectory, "PlayButtonIcon.png")));
+            playSource.EndInit();
+            playPauseImage.Source = playSource;
+
+            dataGrid.Dispatcher.Invoke(() => {
+                playingBar.Visibility = Visibility.Visible;
+                exportButton.Visibility = Visibility.Collapsed;
+            }) ;
         }
 
         private void SliderDragStart(object sender, DragStartedEventArgs e)
@@ -2511,7 +2471,7 @@ namespace PacketAnalysisApp
 
         }
 
-        private void SliderValueChanged(object sender, DragCompletedEventArgs e)
+        private void SliderDragCompleted(object sender, DragCompletedEventArgs e)
         {
             dataGrid.Dispatcher.Invoke(() =>
             {
@@ -2519,9 +2479,24 @@ namespace PacketAnalysisApp
                 sliderText.Text = time;
                 int index = playDataStruct.FindIndex(item => item.Key[2] == time);
 
-                removeData(lineValuesList, chartXLabels, time);
-                removeData(dimLineValuesList, dimChartXLabels, time);                
-                playData(playDataStruct, index);
+                bool forward = DateTime.ParseExact(time, "HH:mm:ss", CultureInfo.InvariantCulture)
+                               > DateTime.ParseExact(chartXLabels.ElementAt(0).Value.Last(), "HH:mm:ss", CultureInfo.InvariantCulture);
+
+
+                if(!forward)
+                {
+                    removeData(lineValuesList, chartXLabels, time);
+                    removeData(dimLineValuesList, dimChartXLabels, time);
+                    SetDataSource();
+                }
+                else
+                {
+                    int startIdx = lastIndex;
+                    playData(playDataStruct, startIdx, index, false);
+                    SetDataSource();
+                }
+         
+                playData(playDataStruct, index, playDataStruct.Count);
             });
         }
 
@@ -2597,16 +2572,11 @@ namespace PacketAnalysisApp
                                     values[key].RemoveAt(values[key].Count - 1);
                                 }
                             }
-
-
-
                             return new KeyValuePair<string[], List<string>>(kvp.Key, labelList);
                         })
                         .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
             labels = newDictionary;
-
-
         }
 
         public async void ConcatList()
@@ -2670,15 +2640,17 @@ namespace PacketAnalysisApp
 
                 playDataStruct = MatchAndCreateList(result_deneme, result_deneme1);
                 clearData();
-                playData(playDataStruct, 0);
+                playData(playDataStruct, 0, playDataStruct.Count);
                 //PrintMatchedList(a);
             });
         }
 
-        public void playData(List<KeyValuePair<string[], int[]>> list, int startIdx)
+        public int lastIndex;
+        public void playData(List<KeyValuePair<string[], int[]>> list, int startIdx, int stopIdx, bool play = true)
         {
             SetDataSource();
             sliderChanged = false;
+
             dataGrid.Dispatcher.Invoke(new Action(() =>
             {
                 playingBar.Maximum = freqTimes.Count - 1;
@@ -2687,15 +2659,26 @@ namespace PacketAnalysisApp
                 loading.Visibility = Visibility.Collapsed;
                 playingBar.Visibility = Visibility.Visible;
                 logLabel.Visibility = Visibility.Collapsed;
+
+                BitmapImage playSource = new BitmapImage();
+                playSource.BeginInit();
+                playSource.UriSource = new Uri((Path.Combine(Environment.CurrentDirectory, "PauseButtonIcon.png")));
+                playSource.EndInit();
+                playPauseImage.Source = playSource;
+                playPauseButton.Name = "pause";
             }));
 
             Task.Run( async () =>
             {
                 try
                 {
-                    for (int i = startIdx; i < list.Count; i++)
+                    for (int i = startIdx; i < stopIdx; i++)
                     {
-                        if (sliderChanged) return;
+                        if (sliderChanged) 
+                        {
+                            lastIndex = i;
+                            return;
+                        }
 
                         if (!dataLoading) return;
 
@@ -2795,7 +2778,7 @@ namespace PacketAnalysisApp
                                 }
                             }));
 
-                            await Task.Delay(delay);
+                            if(play) await Task.Delay(delay);
                         }
 
                         else
@@ -2834,14 +2817,64 @@ namespace PacketAnalysisApp
                                 }
                             }));
 
-                            if(dim == -1) await Task.Delay(1000 / totalReceivedPacket.Count);
+                            if(dim == -1 & play) await Task.Delay(1000 / totalReceivedPacket.Count);
                         }
                     }
                 }
                 catch { }
+
+                if (play)
+                {
+                    dataGrid.Dispatcher.Invoke(new Action(() =>
+                    {
+                        BitmapImage playSource = new BitmapImage();
+                        playSource.BeginInit();
+                        playSource.UriSource = new Uri((Path.Combine(Environment.CurrentDirectory, "PlayButtonIcon.png")));
+                        playSource.EndInit();
+                        playPauseImage.Source = playSource;
+                        playPauseButton.Name = "play";
+                    }));
+                }
+
             });
         }
 
+        private void PlayPauseButtonClicked(object sender, RoutedEventArgs e)
+        {
+            Button button = sender as Button;
+            if(button.Name == "pause")
+            {
+                BitmapImage playSource = new BitmapImage();
+                playSource.BeginInit();
+                playSource.UriSource = new Uri((Path.Combine(Environment.CurrentDirectory, "PlayButtonIcon.png")));
+                playSource.EndInit();
+                playPauseImage.Source = playSource;
+                playPauseButton.Name = "play";
+                sliderChanged = true;
+            }
+            else if(button.Name == "play")
+            {
+                BitmapImage playSource = new BitmapImage();
+                playSource.BeginInit();
+                playSource.UriSource = new Uri((Path.Combine(Environment.CurrentDirectory, "PauseButtonIcon.png")));
+                playSource.EndInit();
+                playPauseImage.Source = playSource;
+                playPauseButton.Name = "pause";
+                if (playingBar.Value == playingBar.Maximum) 
+                {
+                    clearData();
+                    playData(playDataStruct, 0, playDataStruct.Count);
+                } 
+                else playData(playDataStruct, lastIndex, playDataStruct.Count);
+            }
+            else
+            {
+                ConcatList();
+
+                loading.Visibility = Visibility.Visible;
+                exportButton.Visibility = Visibility.Collapsed;
+            }
+        }
 
         public void PrintMatchedList(List<KeyValuePair<string[], int[]>> lookup)
         {
@@ -2924,64 +2957,20 @@ namespace PacketAnalysisApp
             List < KeyValuePair<string[], int[]>> sortedResult = temp.OrderBy(entry => DateTime.ParseExact(entry.Key[3], "HH:mm:ss:fff", null)).ToList();
 
             return sortedResult;
-
-            //return (
-            //    from entry1 in list1
-            //    from entry2 in list2
-            //    select new
-            //    {
-            //        Key = new string[] { entry1.Key[0], entry1.Key[1], entry1.Value.Key, entry2.Value.Key },
-            //        Value = new int[] { entry1.Value.Value, entry2.Value.Value },
-            //        ConditionSatisfied = ArrComparer(entry1.Key, entry2.Key) && entry2.Value.Key.Contains(entry1.Value.Key)
-            //    }
-            //)
-            //.Where(result => result.ConditionSatisfied)
-            //.Select(result =>
-            //{
-            //    if (result.ConditionSatisfied)
-            //    {
-            //        return new KeyValuePair<string[], int[]>(result.Key, result.Value);
-            //    }
-            //    else
-            //    {
-            //        return new KeyValuePair<string[], int[]>(result.Key, result.Value);
-            //    }
-            //}).ToList();
-        }
-
-        public bool ArraysAreEqual(string[] arr1, string[] arr2)
-        {
-            if (arr2.Length != arr1.Length)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < arr2.Length; i++)
-            {
-                if (arr1[i] != arr2[i])
-                {
-                    return false;
-                }
-            }
-            return true;
         }
 
 
         public void FillEnumStruct() 
-        {
-            
+        {            
             FillChart("FREKANS");
             FillChart("BOYUT");
-
-            logLabel.Visibility = Visibility.Visible;
-            logLabel.Content = "Kayıtlı Veriler Görüntüleniyor";
         }
 
         private async void setColorLoad()        
         {
             await Task.Delay(1000);
             setColor();
-            exportButton.Visibility = Visibility.Visible;
+            //exportButton.Visibility = Visibility.Visible;
             loading.Visibility = Visibility.Collapsed;
         }
 
@@ -3004,9 +2993,6 @@ namespace PacketAnalysisApp
 
             loading.Visibility = Visibility.Visible;
             exportButton.Visibility = Visibility.Collapsed;
-            //SaveSortExcelData("BOYUT");
-            //SaveSortExcelData("FREKANS");
-            //PlaySavedData();
         }
     }
 }
