@@ -1,10 +1,10 @@
 {
   "Name": "ANA_PAKET",
   "Path": "C:\\Users\\PC_4232\\AppData\\Roaming\\PacketAnalysis\\Matched_RaporEnum.cs",
-  "chartLength": 10,
+  "chartLength": 15,
   "bufferLength": 3,
   "Freq": {
-    "ANA_PAKET_1.ANA_PAKET_1_1": 0,
+    "ANA_PAKET_1.ANA_PAKET_1_1": 1,
     "ANA_PAKET_1.ANA_PAKET_1_2": 0,
     "ANA_PAKET_1.ANA_PAKET_1_3": 0,
     "ANA_PAKET_1.ANA_PAKET_1_4": 0,
@@ -117,7 +117,7 @@
     "ANA_PAKET_15.ANA_PAKET_15_8": 0
   },
   "Dim": {
-    "ANA_PAKET_1.ANA_PAKET_1_1": 0,
+    "ANA_PAKET_1.ANA_PAKET_1_1": 400,
     "ANA_PAKET_1.ANA_PAKET_1_2": 0,
     "ANA_PAKET_1.ANA_PAKET_1_3": 0,
     "ANA_PAKET_1.ANA_PAKET_1_4": 0,

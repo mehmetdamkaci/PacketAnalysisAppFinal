@@ -145,8 +145,6 @@ C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\tr
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\zh-Hans\Microsoft.CodeAnalysis.CSharp.resources.dll
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\bin\Debug\zh-Hant\Microsoft.CodeAnalysis.CSharp.resources.dll
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\obj\Debug\PacketAnalysisApp.csproj.AssemblyReference.cache
-C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\obj\Debug\EnumMatchWindow.baml
-C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\obj\Debug\EnumMatchWindow.g.cs
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\obj\Debug\MainWindow.g.cs
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\obj\Debug\App.g.cs
 C:\Users\PC_4232\Desktop\Mehmet\PacketAnalysisApp\PacketAnalysisApp\obj\Debug\GeneratedInternalTypeHelper.g.cs
