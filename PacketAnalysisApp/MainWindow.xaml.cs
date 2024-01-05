@@ -1581,7 +1581,7 @@ namespace PacketAnalysisApp
 
                     updateBarPieChart(paket_proje);
 
-                    dataSourceUpdate(paket_proje, totalReceivedPacket[paket_proje][1], bytes.Length);
+                    dataSourceUpdate(paket_proje, totalReceivedPacket[paket_proje][0], bytes.Length);
 
                 }));
             }
@@ -2239,7 +2239,9 @@ namespace PacketAnalysisApp
 
                             dataGrid.Dispatcher.Invoke(new System.Action(() =>
                             {
-                                playingBar.Value = freqTimes.FindIndex(x => x == freqLabel);
+                                int playBarValue = freqTimes.FindIndex(x => x == freqLabel);
+                                if (playBarValue != -1) playingBar.Value = playBarValue;
+                                
                                 string fileName = paket_proje[0] + "_" + paket_proje[1];
 
 
@@ -2277,7 +2279,8 @@ namespace PacketAnalysisApp
                         {
                             dataGrid.Dispatcher.Invoke(new Action(() =>
                             {
-                                playingBar.Value = freqTimes.FindIndex(x => x == freqLabel);
+                                int playBarValue = freqTimes.FindIndex(x => x == freqLabel);
+                                if (playBarValue != -1) playingBar.Value = playBarValue;
 
                                 if (!dataLoading) return;
                                 var item = dataSource.FirstOrDefault(x => x.Key.SequenceEqual(paket_proje));
